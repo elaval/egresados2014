@@ -462,7 +462,7 @@ const carreras = [...await db.query(`
 WITH tabla as (SELECT mrun,
   CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
 FROM datos
-WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'
+/* WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%' */
 GROUP BY mrun, area_carrera_generica)
 
 SELECT carrera, count(*)::Int as estudiantes 
@@ -741,6 +741,7 @@ Datos Abiertos, Mineduc, https://datosabiertos.mineduc.cl/
 ### Notas:
 
 * Hay carreras que formalmente tienen nombres diferentes pero en la práctica corresponnden a la misma área.  Por ejemplo: "AGRONOMIA E INGENIERIA FORESTAL" en la PONTIFICIA UNIVERSIDAD CATOLICA DE CHILE e "INGENIERIA AGRONOMICA" en la "UNIVERSIDAD DE CHILE" corrresponden al área genérica "Agronomía".  Para efectos del análisis en esta exploración se utiliza la clasificación de "Area Genérica" (campo area_carrera_generica) del Sistema de Información de la Educación Superior (SIES).
+  En esta exploración las distintas carreras genéricas que incluyan "Ingeniería Civil" en su nombre son agregadas y presentadas como "Ingeniería Civil".
 
 * **Plan común de Ingeniería Civil** El plan común de Ingeniería Civil en Chile es un programa inicial ofrecido por muchas universidades que permite a los estudiantes comenzar sus estudios en ingeniería sin elegir inmediatamente una especialidad. Es un camino introductorio en el que se entregan las bases científicas, matemáticas y técnicas necesarias para luego optar por una especialidad específica dentro de las distintas ramas de la Ingeniería Civil. En la Universidad de Chile, por ejemplo, estudiantes que se matriculan inicialmente en Plan Común pueden continuar con especialidades de la carrera de Ingenería Civil, y también con la carrera de Geología y licenciaturas en Física, Astronomía y Geofísica (fuente: https://ingenieria.uchile.cl/carreras/plan-comun).  
 
