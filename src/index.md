@@ -85,7 +85,7 @@ const establecimientoSeleccionado = (() =>{
 
 <div class="card" style="padding: 10;">  
 
-# Resumen General
+## Resumen General
 
 En ${establecimientoSeleccionado.NOM_RBD}, egresaron ${
     establecimientoSeleccionado.numeroEstudiantes
@@ -93,11 +93,12 @@ En ${establecimientoSeleccionado.NOM_RBD}, egresaron ${
 
 Entre 2015 y 2024:
 * ${statsEstablecimiento.totalEdSuperior} se matricularon en alguna carrera de Educación Superior.
-* ${
-    statsEstablecimiento.totalEdSuperior == statsEstablecimiento.totalUniversidad_Carrera_Profesional
-      ? "Todos/as"
-      : statsEstablecimiento.totalUniversidad_Carrera_Profesional
-  } se matricularon en carreras profesionales universitarias.
+  * ${statsEstablecimiento.totalUniversidad} en Universidades ${statsEstablecimiento.totalUniversidad_Carrera_Profesional == statsEstablecimiento.totalUniversidad ? `en carreras profesionales` : `(${statsEstablecimiento.totalUniversidad_Carrera_Profesional} en carreras profesionales)`}.
+  * ${statsEstablecimiento.totalIP} en Institutos Profesionales ${statsEstablecimiento.totalIP_Carrera_Profesional == statsEstablecimiento.totalIP ? `en carreras profesionales` : `(${statsEstablecimiento.totalIP_Carrera_Profesional} en carreras profesionales)`}.
+  * ${statsEstablecimiento.totalCFT} en Centros de Formación Técnica.
+
+
+
 
 ```js
 const statsEstablecimiento = (() => {
@@ -107,10 +108,25 @@ const statsEstablecimiento = (() => {
   const totalUniversidad_Carrera_Profesional =
     cifrasTipoEdSuperior[0].Universidad_Carrera_Profesional;
 
+  const totalUniversidad_Carrera_Técnica =
+    cifrasTipoEdSuperior[0].Universidad_Carrera_Técnica;
+
+  const totalIP = cifrasTipoEdSuperior[0].IP;
+  const totalIP_Carrera_Profesional =
+    cifrasTipoEdSuperior[0].IP_Carrera_Profesional;
+  const totalIP_Carrera_Técnica = cifrasTipoEdSuperior[0].IP_Carrera_Técnica;
+
+  const totalCFT = cifrasTipoEdSuperior[0].CFT;
+
   return {
     totalEdSuperior: totalEdSuperior,
     totalUniversidad: totalUniversidad,
-    totalUniversidad_Carrera_Profesional: totalUniversidad_Carrera_Profesional
+    totalUniversidad_Carrera_Profesional: totalUniversidad_Carrera_Profesional,
+    totalUniversidad_Carrera_Técnica:totalUniversidad_Carrera_Técnica,
+    totalIP: totalIP,
+    totalIP_Carrera_Profesional: totalIP_Carrera_Profesional,
+    totalIP_Carrera_Técnica: totalIP_Carrera_Técnica,
+    totalCFT: totalCFT
   };
 })()
 ```
@@ -196,7 +212,7 @@ const statsEstablecimiento = (() => {
     marginLeft: 180,
     marginRight: 30,
     caption:
-      "Nota: puede haber matriculas de la misma persona en más de un tipo de Institución/Carrera entre 2015 y 2024)",
+      "Nota: puede haber matriculas de la misma persona en más de un tipo de Institución/Carrera, por lo que las sumas de las cifras parciales pueden no coincidir con los subtotales y el total en Educación Superior.",
     marks: [
       Plot.barX(dataPlot, {
         x: "valor",
