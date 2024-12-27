@@ -7,12 +7,11 @@ sql:
 ---
 # Matrícula en carreras universitarias según establecimiento de egreso
 
-Me ha interesado explorar cuáles son las carreras de educación superior en que se matriculan los estudiantes que egresan de Educación Media, y cuántos se mantienen o cambian de carrera.  
+Esta exploración analiza las carreras de educación superior elegidas por los estudiantes que egresan de Educación Media y cuántos se mantienen o cambian de carrera.  
 
-Como exploración inicial me he concentrado en los estudiantes que egresaron de Establecimientos de Educación Media para jóvenes en 2014 y analicé los registros de matrícula en carreras profesionales de pregrado en univresidades.
+En esta primera etapa, me he concentrado en los estudiantes que egresaron de establecimientos de Educación Media para jóvenes en 2014, y he analizado los registros de matrícula en carreras profesionales de pregrado en universidades.  
 
-Pueden ver los datos (anónimos) para los jóvenes egresados de algún establecimiento en particular, seleccionándolo a continuación:
-
+Puedes explorar los datos (anónimos) seleccionando un establecimiento específico:
 
 ```js
 const regionSeleccionada = (() =>{
@@ -21,14 +20,14 @@ const regionSeleccionada = (() =>{
     .map((items, key) => ({
       items: items,
       region: key,
+      orden: ordenRegiones[key],
       numeroEstudiantes: items.reduce(
         (memo, d) => memo + d.numeroEstudiantes,
         0
       )
     }))
     .filter((d) => d.region !== "null")
-    .sortBy((d) => d.numeroEstudiantes)
-    .reverse()
+    .sortBy((d) => d.orden)
     .value();
 
   return view(Inputs.select(options, {
@@ -54,8 +53,7 @@ const comunaSeleccionada = (() => {
       )
     }))
     .filter((d) => d.comuna !== "null")
-    .sortBy((d) => d.numeroEstudiantes)
-    .reverse()
+    .sortBy((d) => d.comuna)
     .value();
 
   return view(Inputs.select(options, {
@@ -85,19 +83,21 @@ const establecimientoSeleccionado = (() =>{
 ## ${establecimientoSeleccionado.NOM_RBD} (${aliasDependencia[establecimientoSeleccionado.COD_DEPE2]})
 ### ${comunaSeleccionada.comuna}
 
-<div class="card" style="padding: 10;">
+<div class="card" style="padding: 10;">  
 
-En el ${establecimientoSeleccionado.NOM_RBD}  en 2014 egresaron ${
+# Resumen General
+
+En ${establecimientoSeleccionado.NOM_RBD}, egresaron ${
     establecimientoSeleccionado.numeroEstudiantes
-  } estudiantes    
+  } estudiantes en 2014.
 
 Entre 2015 y 2024:
-* ${statsEstablecimiento.totalEdSuperior} se matricularon en alguna carrera de Educación Superior
+* ${statsEstablecimiento.totalEdSuperior} se matricularon en alguna carrera de Educación Superior.
 * ${
     statsEstablecimiento.totalEdSuperior == statsEstablecimiento.totalUniversidad_Carrera_Profesional
       ? "Todos/as"
       : statsEstablecimiento.totalUniversidad_Carrera_Profesional
-  } se matricularon en alguna carrera profesional universitaria
+  } se matricularon en carreras profesionales universitarias.
 
 ```js
 const statsEstablecimiento = (() => {
@@ -218,21 +218,25 @@ const statsEstablecimiento = (() => {
 
 </div>
 
-### 5 Carreras e Instituciones de Educación Superior más frecuentes
+## Las 5 carreras e instituciones más frecuentes
+
 <div class="grid grid-cols-2">
-<div class="card" style="padding: 10;">
-<h4>Carreras</h4>   
-${carreras.slice(0,5).map(d => html`<li> ${d.carrera}`)}
+<div class="card" style="padding: 10;">  
+
+## Carreras  
+${carreras.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
 </div>
 <div class="card" style="padding: 10;">
-<h4>Instituciones</h4>   
-${universidades.slice(0,5).map(d => html`<li> ${d.nomb_inst}`)}
+
+## Instituciones   
+${universidades.slice(0,5).map(d => html`<li> ${d.nomb_inst} (${d.estudiantes} estudiantes)`)}
 </div>
 </div>
 
 
+## Permanencia y cambio en carreras profesionales universitarias
 
-## Permanencia o de cambio en carreras profesionales universitarias
+
 
 ```js
 const resumen = (() => {
@@ -280,11 +284,11 @@ const resumen = (() => {
 })()
 ```
 <div class="card">
-De los/as ${resumen.totalMatriculados} estudiantes con matricula en carreras profesionales universitarias
 
-* ${resumen.matriculados1Carrera} registran matrícula sólo en **una carrera** de la misma universidad
-* ${resumen.matriculadosProbablemente1Carrera} registran matrícula en más de una carrera en la misma universidad pero en la práctica no es un cambio de carrera (ej. Ingreso a Plan Común de Ingeniería, Ingreso vía Bachillerato) 
-* ${resumen.matriculadosMultiplesCarreras} regstran matrícula en **más de una carrera** o en más de una universidad
+De los ${resumen.totalMatriculados} estudiantes matriculados en carreras profesionales universitarias:  
+* ${d3.format(".1%")(resumen.matriculados1Carrera/resumen.totalMatriculados)} registraron matrícula en una única carrera dentro de la misma universidad.
+* ${d3.format(".1%")(resumen.matriculadosProbablemente1Carrera/resumen.totalMatriculados)} iniciaron en programas como Plan Común de Ingeniería o Bachillerato, que no implican un cambio real de carrera.
+* ${d3.format(".1%")(resumen.matriculadosMultiplesCarreras/resumen.totalMatriculados)} registraron matrícula en más de una carrera o en más de una universidad.
 
 </div>
 
@@ -314,18 +318,18 @@ const chartMismaCarrera = (() => {
 ```
 
 <div class="card">
-<h2>Matrícula en misma carrera y universidad a lo largo del tiempo</h2>
+
+## Matrícula en la misma carrera y universidad a lo largo del tiempo 
+
 ${chartMismaCarrera}
 
 </div>
 
 <div class="card">  
 
-## Quiénes registran más de una carrera en la misma universidad, pero probablemente es un caso de continuidad
-
-* En algunas modalidades de ingreso (ej Bachillerato / College / Plan común de Ingeniería) se espera un cambio formal de carrera como parte del plan regular de estudios
-* Inicio en Ingeniería Plan común y continuación en Ingeniería en la misma universidad
-* Inicio en Bachillerato/College y continuación en otra carrera de la misma universidad
+## Casos de continuidad esperada
+* Ingresaron a programas como Bachillerato, College o Plan Común de Ingeniería, que contemplan un cambio formal de carrera.
+* Ejemplo: inicio en Ingeniería Plan Común y continuación en Ingeniería en la misma universidad.
 
 ${chartProbablementeMismaCarrera}
 </div>
@@ -334,12 +338,16 @@ ${chartProbablementeMismaCarrera}
 
 <div class="card">
 
-## Casos que probablemente corresponden a un cambio de carrera
-* Registros de matrícula en universidades diferentes
-* Registros de matrícula en carreras diferentes sin haber iniciado en Bachillerato o Plan Común de Ingeniería
+## Casos que corresponden a un cambio de carrera
+* Matrícula en universidades diferentes.
+* Matrícula en carreras distintas sin inicio en Bachillerato o Plan Común de Ingeniería.
 
-${chartCambioCarrera}
+
+${chartCambioCarrera} 
+
 </div>
+
+
 
 ```js
 const chartProbablementeMismaCarrera = (() => {
@@ -435,13 +443,13 @@ WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carr
 
 ```js
 const carreras = [...await db.query(`
-WITH tabla as (SELECT 
-  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
+WITH tabla as (SELECT mrun,
+  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
 FROM datos
 WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'
-GROUP BY area_carrera_generica)
+GROUP BY mrun, area_carrera_generica)
 
-SELECT carrera, sum(estudiantes)::Int as estudiantes 
+SELECT carrera, count(*)::Int as estudiantes 
 FROM tabla
 GROUP BY carrera
 ORDER BY estudiantes DESC
@@ -451,8 +459,12 @@ ORDER BY estudiantes DESC
 
 ```js
 const universidades = [...await db.query(`
+WITH tabla as (
+SELECT DISTINCT mrun, nomb_inst
+FROM datos)
+
 SELECT nomb_inst, count(*) as estudiantes
-FROM datos
+FROM tabla
 GROUP BY nomb_inst
 ORDER BY estudiantes DESC
 `)]
@@ -524,6 +536,25 @@ const aliasRegiones = ({
   11: "De Aisén del Gral. C. Ibáñez del Campo",
   12: "De Magallanes y de La Antártica Chilena"
 })
+
+const ordenRegiones = ({
+  15: 0,
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  13: 6,
+  6: 7,
+  7: 8,
+  16:9,
+  8: 10,
+  9: 11,
+  14: 12,
+  10: 13,
+  11: 14,
+  12: 15
+})
 ```
 
 ```js
@@ -558,7 +589,7 @@ function analisisTrayectorias(data) {
         /Ingeniería Civil, plan común/
       );
       const otrasCarrerasIngenieria = otrasCarreras.reduce(
-        (memo, e) => memo && e.carrera.match(/Ingeniería Civil/),
+        (memo, e) => memo && e.carrera.match(/Ingeniería Civil|Ingenierías Civiles/),
         true
       );
 
@@ -682,4 +713,29 @@ const dictComunas = (() => {
 
   return dict;
 })()
+```
+
+## Fuente de datos
+
+Datos Abiertos, Mineduc, https://datosabiertos.mineduc.cl/
+
+* Datos de jóvenes egresados de Educación Media: https://datosabiertos.mineduc.cl/notas-de-ensenanza-media-y-percentil-jovenes/
+* Datos de matrícula en Educación Superior: https://datosabiertos.mineduc.cl/matricula-en-educacion-superior/
+
+### Notas:
+
+* Hay carreras que formalmente tienen nombres diferentes pero en la práctica corresponnden a la misma área.  Por ejemplo: "AGRONOMIA E INGENIERIA FORESTAL" en la PONTIFICIA UNIVERSIDAD CATOLICA DE CHILE e "INGENIERIA AGRONOMICA" en la "UNIVERSIDAD DE CHILE" corrresponden al área genérica "Agronomía".  Para efectos del análisis en esta exploración se utiliza la clasificación de "Area Genérica" (campo area_carrera_generica) del Sistema de Información de la Educación Superior (SIES).
+
+* **Plan común de Ingeniería Civil**
+
+```js
+const areaCarreraGenerica = [...await db.query(`
+SELECT area_carrera_generica, nomb_carrera,nomb_inst, count(*) as records
+FROM datos
+WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'
+GROUP BY area_carrera_generica, nomb_carrera, nomb_inst
+ORDER BY area_carrera_generica,nomb_inst
+`)]
+
+display(areaCarreraGenerica)
 ```
