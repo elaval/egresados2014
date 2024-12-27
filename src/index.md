@@ -750,8 +750,8 @@ Estos programas están diseñados para ofrecer una formación inicial general en
 En este análisis se considera como un caso de continuidad esperada cuando hay indicios de que los estudiantes ingresaron a Plan Común de Ingeniería o a Bachillerato / College y luego registran matrícula en carreras de la misma universidad. Para Plan Común de Ingenería Civil y se considera continuidad si luego hay mayrícula en otra carrera de Ingeniería Cívil, Geología, Física, Astronomía o Geofísica en la misma universidad.
 
 ----------
-## Fuente de datos
-Datos Abiertos, Mineduc, https://datosabiertos.mineduc.cl/
+## ¿Cómo se obtuvieron estos datos?
+Los datos utilizados en este análisis provienen de registros oficiales de egreso de Enseñanza Media y matrícula en Educación Superior en Chile, disponibles a través de Datos Abiertos del MINEDUC (https://datosabiertos.mineduc.cl/).
 
 * Datos de jóvenes egresados de Educación Media: https://datosabiertos.mineduc.cl/notas-de-ensenanza-media-y-percentil-jovenes/
 * Datos de matrícula en Educación Superior: https://datosabiertos.mineduc.cl/matricula-en-educacion-superior/
@@ -770,6 +770,15 @@ El ingreso a la educación superior a través de programas como Bachillerato o C
 
 En este análisis se considera como un caso de continuidad esperada cuando hay indicios de que los estudiantes ingresaron a Plan Común de Ingeniería o a Bachillerato / College y luego registran matrícula en carreras de la misma universidad. Para el Plan Común de Ingeniería Civil se considera continuidad si luego hay matrícula en otra carrera de Ingeniería Civil, Geología, Física, Astronomía o Geofísica en la misma universidad.
 
+# ¿Por qué analizar estos datos?
+Entender las trayectorias de los estudiantes después de egresar de la Educación Media puede contribuir para evaluar y mejorar el sistema educativo chileno. Este análisis permite:  
+* **Identificar patrones de elección de carrera**: Qué carreras e instituciones son las más populares entre los egresados.  
+* **Evaluar la permanencia estudiantil**: Detectar factores que influyen en el éxito académico y en los cambios de carrera.  
+* **Proveer información a futuros estudiantes y sus familias**: Ayuda a tomar decisiones más informadas sobre qué carreras y universidades elegir.  
+* **Apoyar a los establecimientos educativos**: Permite evaluar el impacto de la orientación vocacional y la preparación académica ofrecida.  
+  
+Este tipo de análisis no solo contribuye al entendimiento de las dinámicas educativas, sino que también puede ser una herramienta útil para diseñar políticas públicas más efectivas.  
+  
 Autor de esta página: Ernesto Laval https://bsky.app/profile/elaval.bsky.social
 
 ```js
