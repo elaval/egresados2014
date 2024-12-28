@@ -13,7 +13,7 @@ Este análisis ofrece una exploración inicial de las decisiones educativas de l
 
 Se trata de un análisis descriptivo que busca visualizar patrones generales, sin profundizar en explicaciones o factores causales.
 
-En esta primera etapa, me he concentrado en los estudiantes que egresaron de establecimientos de Educación Media para jóvenes en 2014, y he analizado los registros de matrícula en carreras profesionales de pregrado en universidades.  
+En esta primera etapa, me he concentrado en los estudiantes que egresaron de establecimientos de Educación Media para jóvenes en 2014, y he analizado los registros de matrícula en carreras profesionales de pregrado en universidades para describir continuidad o cambio de carrera.  
 
 Puedes explorar los datos (anónimos) seleccionando un establecimiento específico:
 
@@ -239,6 +239,7 @@ const statsEstablecimiento = (() => {
 </div>
 
 ## Las 5 carreras e instituciones más frecuentes
+<div class="small muted">Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
 
 <div class="grid grid-cols-2">
 <div class="card" style="padding: 10;">  
@@ -254,8 +255,7 @@ ${universidades.slice(0,5).map(d => html`<li> ${d.nomb_inst} (${d.estudiantes} e
 </div>
 
 
-## Permanencia y cambio en carreras profesionales universitarias
-
+## Resumen de permanencia y cambio en carreras profesionales universitarias
 
 
 ```js
@@ -323,7 +323,7 @@ const chartMismaCarrera = (() => {
 
   return Plot.plot({
     x: { axis: "both", label:"Año" },
-    y: { tickFormat: (d, i) => i, label: "Estudiante" },
+    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
     marks: [
       Plot.cell(dataPlot, {
         y: "mrun",
@@ -337,12 +337,14 @@ const chartMismaCarrera = (() => {
 })()
 ```
 
+## Detalle de los registros de matrícula en carreras profesionales universidatrias entre 2015 y 2024
+<div class="small muted"> Cada fila representa la matrícula de un(a) estudiante específica entre 2015 y 2024. Al pinchar en un rectángulo de color se mostrará la carrera y universidad correspondiente.</div>
+
+
 <div class="card">
 
 ## Matrícula en la misma carrera y universidad a lo largo del tiempo 
-
 ${chartMismaCarrera}
-
 </div>
 
 <div class="card">  
@@ -351,7 +353,8 @@ ${chartMismaCarrera}
 * Ingresaron a programas como Bachillerato, College o Plan Común de Ingeniería, que contemplan un cambio formal de carrera.
 * Ejemplo: inicio en Ingeniería Plan Común y continuación en Ingeniería en la misma universidad.
 
-${chartProbablementeMismaCarrera}
+${chartProbablementeMismaCarrera}  
+
 </div>
 
 
@@ -393,7 +396,7 @@ const chartProbablementeMismaCarrera = (() => {
 
   return dataPlot.length ? Plot.plot({
     x: { axis: "both", label:"Año" },
-    y: { tickFormat: (d, i) => i, label: "Estudiante" },
+    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
     marks: [
       Plot.cell(dataPlot, {
         y: "mrun",
@@ -430,7 +433,7 @@ const chartCambioCarrera = (() => {
 
   return Plot.plot({
     x: { axis: "both", label: "Año" },
-    y: { tickFormat: (d, i) => i, label: "Estudiante" },
+    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
     marks: [
       Plot.cell(dataPlot, {
         y: "mrun",
