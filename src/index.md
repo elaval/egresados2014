@@ -7,7 +7,11 @@ sql:
 ---
 # Matrícula en carreras universitarias según establecimiento de egreso
 
-Esta exploración analiza las carreras de educación superior elegidas por los estudiantes que egresan de Educación Media y cuántos se mantienen o cambian de carrera.  
+## Introducción
+
+Este análisis ofrece una exploración inicial de las decisiones educativas de los egresados de Educación Media en Chile: ¿qué carreras eligen, en qué instituciones se matriculan y cuántos estudiantes persisten o cambian de rumbo académico?
+
+Se trata de un análisis descriptivo que busca visualizar patrones generales, sin profundizar en explicaciones o factores causales.
 
 En esta primera etapa, me he concentrado en los estudiantes que egresaron de establecimientos de Educación Media para jóvenes en 2014, y he analizado los registros de matrícula en carreras profesionales de pregrado en universidades.  
 
@@ -92,7 +96,7 @@ En ${establecimientoSeleccionado.NOM_RBD}, egresaron ${
   } estudiantes en 2014.
 
 Entre 2015 y 2024:
-* ${statsEstablecimiento.totalEdSuperior} se matricularon en alguna carrera de Educación Superior.
+* ${statsEstablecimiento.totalEdSuperior} (${d3.format(".1%")(statsEstablecimiento.totalEdSuperior/establecimientoSeleccionado.numeroEstudiantes)}) se matricularon en alguna carrera de Educación Superior.
   * ${statsEstablecimiento.totalUniversidad} en Universidades ${statsEstablecimiento.totalUniversidad_Carrera_Profesional == statsEstablecimiento.totalUniversidad ? `en carreras profesionales` : `(${statsEstablecimiento.totalUniversidad_Carrera_Profesional} en carreras profesionales)`}.
   * ${statsEstablecimiento.totalIP} en Institutos Profesionales ${statsEstablecimiento.totalIP_Carrera_Profesional == statsEstablecimiento.totalIP ? `en carreras profesionales` : `(${statsEstablecimiento.totalIP_Carrera_Profesional} en carreras profesionales)`}.
   * ${statsEstablecimiento.totalCFT} en Centros de Formación Técnica.
@@ -730,25 +734,15 @@ const dictComunas = (() => {
   return dict;
 })()
 ```
+## ¿Por qué explorar estos datos?
 
-## Fuente de datos
+Este análisis descriptivo permite observar patrones iniciales en las trayectorias de los estudiantes egresados, como:
 
-Datos Abiertos, Mineduc, https://datosabiertos.mineduc.cl/
+- Qué carreras e instituciones son más comunes.
+- Cuántos estudiantes permanecen en la misma carrera y cuántos cambian.
+- Tendencias generales en la matrícula de Educación Superior.
 
-* Datos de jóvenes egresados de Educación Media: https://datosabiertos.mineduc.cl/notas-de-ensenanza-media-y-percentil-jovenes/
-* Datos de matrícula en Educación Superior: https://datosabiertos.mineduc.cl/matricula-en-educacion-superior/
-
-### Notas:
-
-* Hay carreras que formalmente tienen nombres diferentes pero en la práctica corresponnden a la misma área.  Por ejemplo: "AGRONOMIA E INGENIERIA FORESTAL" en la PONTIFICIA UNIVERSIDAD CATOLICA DE CHILE e "INGENIERIA AGRONOMICA" en la "UNIVERSIDAD DE CHILE" corrresponden al área genérica "Agronomía".  Para efectos del análisis en esta exploración se utiliza la clasificación de "Area Genérica" (campo area_carrera_generica) del Sistema de Información de la Educación Superior (SIES).
-  En esta exploración las distintas carreras genéricas que incluyan "Ingeniería Civil" en su nombre son agregadas y presentadas como "Ingeniería Civil".
-
-* **Plan común de Ingeniería Civil** El plan común de Ingeniería Civil en Chile es un programa inicial ofrecido por muchas universidades que permite a los estudiantes comenzar sus estudios en ingeniería sin elegir inmediatamente una especialidad. Es un camino introductorio en el que se entregan las bases científicas, matemáticas y técnicas necesarias para luego optar por una especialidad específica dentro de las distintas ramas de la Ingeniería Civil. En la Universidad de Chile, por ejemplo, estudiantes que se matriculan inicialmente en Plan Común pueden continuar con especialidades de la carrera de Ingenería Civil, y también con la carrera de Geología y licenciaturas en Física, Astronomía y Geofísica (fuente: https://ingenieria.uchile.cl/carreras/plan-comun).  
-
-* **Ingreso vía Bachillerato o College** El ingreso a la educación superior a través de programas como Bachillerato o College representa una alternativa cada vez más popular para los estudiantes que desean explorar diferentes áreas del conocimiento antes de comprometerse con una carrera específica.
-Estos programas están diseñados para ofrecer una formación inicial general en áreas como ciencias, humanidades, artes o ingeniería. Los estudiantes pueden acceder a una continuidad académica hacia carreras específicas dentro de la misma institución, facilitando la transición hacia programas más especializados.
-
-En este análisis se considera como un caso de continuidad esperada cuando hay indicios de que los estudiantes ingresaron a Plan Común de Ingeniería o a Bachillerato / College y luego registran matrícula en carreras de la misma universidad. Para Plan Común de Ingenería Civil y se considera continuidad si luego hay mayrícula en otra carrera de Ingeniería Cívil, Geología, Física, Astronomía o Geofísica en la misma universidad.
+Si bien esta es solo una exploración preliminar, los resultados pueden inspirar análisis más detallados en el futuro para comprender mejor las dinámicas educativas en Chile.
 
 ----------
 ## ¿Cómo se obtuvieron estos datos?
@@ -771,14 +765,6 @@ El ingreso a la educación superior a través de programas como Bachillerato o C
 
 En este análisis se considera como un caso de continuidad esperada cuando hay indicios de que los estudiantes ingresaron a Plan Común de Ingeniería o a Bachillerato / College y luego registran matrícula en carreras de la misma universidad. Para el Plan Común de Ingeniería Civil se considera continuidad si luego hay matrícula en otra carrera de Ingeniería Civil, Geología, Física, Astronomía o Geofísica en la misma universidad.
 
-# ¿Por qué analizar estos datos?
-Entender las trayectorias de los estudiantes después de egresar de la Educación Media puede contribuir para evaluar y mejorar el sistema educativo chileno. Este análisis permite:  
-* **Identificar patrones de elección de carrera**: Qué carreras e instituciones son las más populares entre los egresados.  
-* **Evaluar la permanencia estudiantil**: Detectar factores que influyen en el éxito académico y en los cambios de carrera.  
-* **Proveer información a futuros estudiantes y sus familias**: Ayuda a tomar decisiones más informadas sobre qué carreras y universidades elegir.  
-* **Apoyar a los establecimientos educativos**: Permite evaluar el impacto de la orientación vocacional y la preparación académica ofrecida.  
-  
-Este tipo de análisis no solo contribuye al entendimiento de las dinámicas educativas, sino que también puede ser una herramienta útil para diseñar políticas públicas más efectivas.  
   
 Autor de esta página: Ernesto Laval https://bsky.app/profile/elaval.bsky.social
 
