@@ -121,7 +121,7 @@ const comunaSeleccionada = ({
 ```
 
 ```js
-const db = await DuckDBClient.of({datos : FileAttachment(`../data/Por establecimiento/${observable.params.rbd}.parquet`)});
+const db = await DuckDBClient.of({datos : FileAttachment(`../data/establecimiento/${observable.params.rbd}.parquet`)});
 ```
 
 
