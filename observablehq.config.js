@@ -1,3 +1,11 @@
+import { establecimientos } from './src/data/establecimientos.js';
+console.log(establecimientos);
+
+// Create the dynamicPaths array
+const dynamicPaths = establecimientos.map(est => `/establecimiento/${est.RBD}`);
+
+console.log(dynamicPaths);
+
 // See https://observablehq.com/framework/config for documentation.
 export default {
   // The app’s title; used in the sidebar and webpage titles.
@@ -26,10 +34,7 @@ export default {
   `,
   // The path to the source root.
   root: "src",
-  dynamicPaths: [
-    "/establecimiento/8485",
-    "/establecimiento/5812",
-  ]
+  dynamicPaths: dynamicPaths
 
   // Some additional configuration options and their defaults:
   // theme: "default", // try "light", "dark", "slate", etc.
