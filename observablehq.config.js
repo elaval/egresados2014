@@ -26,6 +26,9 @@ export default {
   `,
   // The path to the source root.
   root: "src",
+  dynamicPaths: [
+    "/establecimiento/8485",
+  ]
 
   // Some additional configuration options and their defaults:
   // theme: "default", // try "light", "dark", "slate", etc.
