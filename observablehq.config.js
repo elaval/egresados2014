@@ -28,6 +28,7 @@ export default {
   root: "src",
   dynamicPaths: [
     "/establecimiento/8485",
+    "/establecimiento/5812",
   ]
 
   // Some additional configuration options and their defaults:
