@@ -523,11 +523,82 @@ FROM tabla`)]
 
 
 ```js
-const db = DuckDBClient.of({
+const db2 = DuckDBClient.of({
   datos: getRemoteFile(
     `https://raw.githubusercontent.com/elaval/data_egresados_2014/main/Por%20establecimiento/${establecimientoSeleccionado.RBD}.parquet`
   )
 })
+```
+
+```js
+const db21 = DuckDBClient.of({
+  datos: getRemoteFile(
+    `file:../data/Por%20establecimiento/${establecimientoSeleccionado.RBD}.parquet`
+  )
+})
+```
+
+
+```js
+const file =  FileAttachment(`../data/Por%20establecimiento/${establecimientoSeleccionado.RBD}.parquet`)
+display(file)
+//const db = await DuckDBClient.of({datos: file});
+
+```
+
+
+
+```js
+const db3 = (async () => {
+  const db = await DuckDBClient.of();
+
+  await db.sql`CREATE TABLE datos
+  AS SELECT *
+  FROM read_parquet('https://raw.githubusercontent.com/elaval/data_egresados_2014/main/Por%20establecimiento/${establecimientoSeleccionado.RBD}.parquet')`;
+
+  return db
+})()
+```
+```js
+const db23b = DuckDBClient.of({
+  datos: getRemoteFile(
+    `https://raw.githubusercontent.com/elaval/data_egresados_2014/main/Por%20establecimiento/${establecimientoSeleccionado.RBD}.parquet`
+  )
+})
+```
+```js
+const db23 = DuckDBClient.of({
+  datos: FileAttachment(
+    `./data/Por%20establecimiento/5812.parquet`
+  )
+})
+```
+
+```js
+const test = DuckDBClient.of({datos: `file://./data/Por%20establecimiento/${establecimientoSeleccionado.RBD}.parquet`});
+
+```
+```js
+display( [...await test.sql`SELECT count(*) from datos`])
+```
+
+```js
+const db = DuckDBClient.of({});
+```
+```js
+display( await db.query(`SELECT count(*) from './data/Por establecimiento/${establecimientoSeleccionado.RBD}.parquet'`))
+```
+
+
+
+```js
+
+  const db_ = await DuckDBClient.of();
+
+  await db_.sql`CREATE TABLE datos
+  AS SELECT *
+  FROM read_parquet('https://raw.githubusercontent.com/elaval/data_egresados_2014/main/Por%20establecimiento/${establecimientoSeleccionado.RBD}.parquet')`;
+
 ```
 
 ```js
