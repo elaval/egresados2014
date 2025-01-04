@@ -3,9 +3,14 @@ toc: false
 
 sql:
   establecimientos: ./NEM_PERCENTILES_AGGREGATED.parquet
-  
+  comunas: ./data/comunas.json
 ---
 # Matrícula en carreras universitarias según establecimiento de egreso
+
+```sql id=comunas
+SELECT *
+FROM comunas
+```
 
 
 ```js
@@ -30,16 +35,20 @@ async function getUserComuna() {
 ```
 
 ```js
-const comuna = await getUserComuna()
-
-window.location.href = `/comuna/${comuna.toUpperCase()}`;
+const comunaBrowser = await getUserComuna()
+```
+```js
+const comuna = [...comunas].map(d => d.comuna).includes(comunaBrowser.toUpperCase()) 
+  ? comunaBrowser.toUpperCase() 
+  : 'SANTIAGO'
 
 ```
 ```js
-display(comuna)
+if (comuna) {
+  display(comuna)
+  window.location.href = `/comuna/${comuna}`;
 
-//window.location.href = `/comuna/TEMUCO`;
-
+}
 ```
 
 ## Introducción
