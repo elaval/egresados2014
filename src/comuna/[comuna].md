@@ -260,6 +260,100 @@ ${_.chain(cifrasTipoEdSuperiorPorEstablecimiento).sortBy(d => d.NOM_RBD).map(d =
 </table>`
 ```
 
+## Resumen de permanencia y cambio en carreras de pregrado
+
+<div class="card">
+
+De los ${resumenCambiosComuna.totalMatriculados} estudiantes matriculados en carreras profesionales universitarias:  
+* ${d3.format(".1%")(resumenCambiosComuna.matriculados1Carrera/resumenCambiosComuna.totalMatriculados)} registraron matrícula en una única carrera dentro de la misma universidad.
+* ${d3.format(".1%")(resumenCambiosComuna.matriculadosProbablemente1Carrera/resumenCambiosComuna.totalMatriculados)} iniciaron en programas como Plan Común de Ingeniería o Bachillerato, que no implican un cambio real de carrera.
+* ${d3.format(".1%")(resumenCambiosComuna.matriculadosMultiplesCarreras/resumenCambiosComuna.totalMatriculados)} registraron matrícula en más de una carrera o en más de una universidad.
+
+</div>
+
+```js
+const chartMismaCarrera = (() => {
+  const dataPlot = _.chain(stats.data["1"])
+    .map((d) => d.map((e) => e.registros))
+    .flatten()
+    .flatten()
+    .sortBy((d) => `${d.area_carrera_generica}-${d.cod_inst}`)
+    .value();
+
+  return Plot.plot({
+    x: { axis: "both", label:"Año" },
+    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
+    marks: [
+      Plot.cell(dataPlot, {
+        y: "mrun",
+        x: "cat_periodo",
+        fill: (d) => `${d.area_carrera_generica}-${d.cod_inst}`,
+        tip: true,
+        title: (d) => `${d.area_carrera_generica}\n${d.nomb_inst}`
+      })
+    ]
+  });
+})()
+```
+
+```js
+const infoCambioCarrera = (() => {
+
+  const candidatosCambioCarrera = _.chain(statsTrayectoriaComuna.desgloseCarrerasPorEstudiante)
+    .filter((d) => d.numCarreras !== "1")
+    .map((d) => d.itemsConCambioCarrera)
+    .flatten()
+    .flatten()
+    .map((d) => d.registros)
+    .flatten()
+    .map((d) => d.mrun)
+    .value();
+
+  const dataPlot = _.chain(statsTrayectoriaComuna.desgloseCarrerasPorEstudiante)
+    .filter((d) => d.numCarreras !== "1")
+    .map((d) => d.itemsConCambioCarrera)
+    .flatten()
+    .flatten()
+    .map((d) => d.registros)
+    .flatten()
+    .filter((d) => candidatosCambioCarrera.includes(d.mrun))
+    .value();
+
+  return _.chain(dataPlot)
+  .groupBy(d => d.mrun)
+  .map((items,key) => ({
+    mrun:key,
+    diferentesCarreras: _.chain(items).groupBy(d => `${d.area_carrera_generica}-${d.nomb_inst}`).map((items,key) => items[0]).value(),
+    areas: _.chain(items).groupBy(d => d.cine_f_13_area).map((items,key) => key).uniq().value(),
+    subareas: _.chain(items).groupBy(d => d.cine_f_13_subarea).map((items,key) => key).uniq().value()
+  }))
+  .value()
+
+})()
+
+const muestraCambioCarreras = _.chain(infoCambioCarrera)
+.sortBy(d => d.areas.length)
+.reverse()
+.slice(0,10)
+.sampleSize(3)
+.map((d,i) => ({
+  caso: `Ejemplo ${i+1}`,
+  carreras: d.diferentesCarreras.map(d => ({
+    carrera: d.nomb_carrera,
+    institucion: d.nomb_inst
+  }))
+}))
+.value()
+
+```
+### Ejemplos de casos de cambio de carrera
+<ul>
+${muestraCambioCarreras.map(d => html`<li> ${d.caso}
+<ul>${d.carreras.map(e => html`<li class="small"> ${e.carrera} (${e.institucion})`)}</ul>`)}
+</ul>
+
+----------
+Seleccione un establecimiento específico en ${comunaSeleccionada.comuna} para obtener datos del establecimeinto detalles 
 
 ```js
 const establecimientoSeleccionado = (() =>{
@@ -455,9 +549,6 @@ ${universidades.slice(0,5).map(d => html`<li> ${d.nomb_inst} (${d.estudiantes} e
 </div>
 
 
-## Resumen de permanencia y cambio en carreras profesionales universitarias
-
-
 ```js
 const resumen = (() => {
   const candidatosCambioCarrera = _.chain(stats.desgloseCarrerasPorEstudiante)
@@ -503,72 +594,53 @@ const resumen = (() => {
   return resumen;
 })()
 ```
-<div class="card">
 
-De los ${resumen.totalMatriculados} estudiantes matriculados en carreras profesionales universitarias:  
-* ${d3.format(".1%")(resumen.matriculados1Carrera/resumen.totalMatriculados)} registraron matrícula en una única carrera dentro de la misma universidad.
-* ${d3.format(".1%")(resumen.matriculadosProbablemente1Carrera/resumen.totalMatriculados)} iniciaron en programas como Plan Común de Ingeniería o Bachillerato, que no implican un cambio real de carrera.
-* ${d3.format(".1%")(resumen.matriculadosMultiplesCarreras/resumen.totalMatriculados)} registraron matrícula en más de una carrera o en más de una universidad.
-
-</div>
 
 ```js
-const chartMismaCarrera = (() => {
-  const dataPlot = _.chain(stats.data["1"])
-    .map((d) => d.map((e) => e.registros))
+const resumenCambiosComuna = (() => {
+  const candidatosCambioCarrera = _.chain(statsTrayectoriaComuna.desgloseCarrerasPorEstudiante)
+    .filter((d) => d.numCarreras !== "1")
+    .map((d) => {
+      const cantidatosCambioCarrera = d.itemsConCambioCarrera.map(
+        (e) => e[0].registros[0].mrun
+      );
+      return cantidatosCambioCarrera;
+    })
     .flatten()
-    .flatten()
-    .sortBy((d) => `${d.area_carrera_generica}-${d.cod_inst}`)
+    .uniq()
     .value();
 
-  return Plot.plot({
-    x: { axis: "both", label:"Año" },
-    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
-    marks: [
-      Plot.cell(dataPlot, {
-        y: "mrun",
-        x: "cat_periodo",
-        fill: (d) => `${d.area_carrera_generica}-${d.cod_inst}`,
-        tip: true,
-        title: (d) => `${d.area_carrera_generica}\n${d.nomb_inst}`
-      })
-    ]
-  });
+  const resumen = {
+    egresados2014: comunaSeleccionada.numeroEstudiantes,
+    totalMatriculados: statsTrayectoriaComuna.numeroEstudiantesConMatricula,
+    matriculados1Carrera: statsTrayectoriaComuna.desgloseCarrerasPorEstudiante.find(
+      (d) => d.numCarreras == "1"
+    )["numEstudiantes"],
+    matriculadosProbablemente1Carrera: _.chain(
+      statsTrayectoriaComuna.desgloseCarrerasPorEstudiante
+    )
+      .filter((d) => d.numCarreras !== "1")
+      .map((d) => d.items)
+      .flatten()
+      .flatten()
+      .map((d) => d.registros[0].mrun)
+      .uniq()
+      .filter((d) => !candidatosCambioCarrera.includes(d))
+      .value()["length"],
+    matriculadosMultiplesCarreras: _.chain(statsTrayectoriaComuna.desgloseCarrerasPorEstudiante)
+      .filter((d) => d.numCarreras !== "1")
+      .map((d) => d.items)
+      .flatten()
+      .flatten()
+      .map((d) => d.registros[0].mrun)
+      .uniq()
+      .filter((d) => candidatosCambioCarrera.includes(d))
+      .value()["length"]
+  };
+
+  return resumen;
 })()
 ```
-
-## Detalle de los registros de matrícula en carreras profesionales universidatrias entre 2015 y 2024
-<div class="small muted"> Cada fila representa la matrícula de un(a) estudiante específica entre 2015 y 2024. Al pinchar en un rectángulo de color se mostrará la carrera y universidad correspondiente.</div>
-
-
-<div class="card">
-
-## Matrícula en la misma carrera y universidad a lo largo del tiempo 
-${chartMismaCarrera}
-</div>
-
-<div class="card">  
-
-## Casos de continuidad esperada
-* Ingresaron a programas como Bachillerato, College o Plan Común de Ingeniería, que contemplan un cambio formal de carrera.
-* Ejemplo: inicio en Ingeniería Plan Común y continuación en Ingeniería en la misma universidad.
-
-${chartProbablementeMismaCarrera}  
-
-</div>
-
-
-
-<div class="card">
-
-## Casos que corresponden a un cambio de carrera
-* Matrícula en universidades diferentes.
-* Matrícula en carreras distintas sin inicio en Bachillerato o Plan Común de Ingeniería.
-
-
-${chartCambioCarrera} 
-
-</div>
 
 
 
@@ -647,15 +719,18 @@ const chartCambioCarrera = (() => {
 })()
 ```
 
+
 ```js
 const stats = analisisTrayectorias(datosEstablecimiento)
+const statsTrayectoriaComuna = analisisTrayectorias(datosComuna)
 ```
 
 ```js
 const datosComuna = [...await db.query(`
 SELECT *
 FROM datos
-WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'
+WHERE nivel_global = 'Pregrado'
+/*WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'*/
 `)]
 ```
 
@@ -663,7 +738,8 @@ WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carr
 const datosEstablecimiento = [...await db.query(`
 SELECT *
 FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'
+WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado' 
+/*WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'*/
 `)]
 ```
 
@@ -968,6 +1044,7 @@ function analisisTrayectorias(data) {
       const primeraCarreraPlanComun = primeraCarrera.carrera.match(
         /Ingeniería Civil, plan común/
       );
+
       const otrasCarrerasIngenieria = otrasCarreras.reduce(
         (memo, e) => memo && e.carrera.match(/Ingeniería Civil|Ingenierías Civiles|Física y Astronomía|Geología|Geofísica/),
         true
@@ -1094,16 +1171,6 @@ const dictComunas = (() => {
   return dict;
 })()
 ```
-## ¿Por qué explorar estos datos?
-
-Este análisis descriptivo permite observar patrones iniciales en las trayectorias de los estudiantes egresados, como:
-
-- Qué carreras e instituciones son más comunes.
-- Cuántos estudiantes permanecen en la misma carrera y cuántos cambian.
-- Tendencias generales en la matrícula de Educación Superior.
-
-Si bien esta es solo una exploración preliminar, los resultados pueden inspirar análisis más detallados en el futuro para comprender mejor las dinámicas educativas en Chile.
-
 ----------
 ## ¿Cómo se obtuvieron estos datos?
 Los datos utilizados en este análisis provienen de registros oficiales de egreso de Enseñanza Media y matrícula en Educación Superior en Chile, disponibles a través de Datos Abiertos del MINEDUC (https://datosabiertos.mineduc.cl/).
@@ -1143,9 +1210,7 @@ import {require} from "npm:d3-require";
 ```js
 const d3Sankey = require.alias({"d3-array": d3, "d3-shape": d3, "d3-sankey": "d3-sankey@0.12.3/dist/d3-sankey.min.js"})("d3-sankey")
 ```
-```js
-display(d3Sankey)
-```
+
 <script src="https://unpkg.com/d3-sankey@0"></script>
 
 
