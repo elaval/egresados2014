@@ -7,6 +7,41 @@ sql:
 ---
 # Matrícula en carreras universitarias según establecimiento de egreso
 
+
+```js
+async function getUserComuna() {
+  try {
+    // Fetch user location data from ipapi
+    const response = await fetch("https://ipapi.co/json/");
+    const data = await response.json();
+
+    if (data && data.region && data.city) {
+      // Use the region and city data (includes comuna)
+      console.log(`User is in: ${data.city}, ${data.region}`);
+      // You can set this as the default in your application
+      return data.city;
+    } else {
+      console.error("Could not retrieve location data");
+    }
+  } catch (error) {
+    console.error("Error fetching location data:", error);
+  }
+}
+```
+
+```js
+const comuna = await getUserComuna()
+
+window.location.href = `/comuna/${comuna.toUpperCase()}`;
+
+```
+```js
+display(comuna)
+
+//window.location.href = `/comuna/TEMUCO`;
+
+```
+
 ## Introducción
 
 Este análisis ofrece una exploración inicial de las decisiones educativas de los egresados de Educación Media en Chile: ¿qué carreras eligen, en qué instituciones se matriculan y cuántos estudiantes persisten o cambian de rumbo académico?
