@@ -24,8 +24,18 @@ FROM establecimientos
 
 
 # Matrícula en carreras universitarias según comuna de egreso
+**${loaded ? '' : `Cargando datos para ${observable.params.comuna} ...`}** 
 
+```js
+const loaded = Mutable(false);
+const reset = () => loaded.value = true;
+```
 
+```js
+if ([...establecimientos].length > 0) {
+  reset()
+}
+```
 
 ```js
 const regionSeleccionada = (() =>{
