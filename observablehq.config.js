@@ -1,8 +1,8 @@
-import { establecimientos } from './src/data/establecimientos.js';
-console.log(establecimientos);
+import { comunas } from './src/data/comunas.js';
+console.log(comunas);
 
 // Create the dynamicPaths array
-const dynamicPaths = establecimientos.map(est => `/establecimiento/${est.RBD}`);
+const dynamicPaths = comunas.map(d => `/comuna/${d.comuna}`);
 
 console.log(dynamicPaths);
 
