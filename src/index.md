@@ -46,7 +46,7 @@ const comuna = [...comunas].map(d => d.comuna).includes(comunaBrowser.toUpperCas
 ```js
 if (comuna) {
   display(comuna)
-  window.location.href = `/comuna/${comuna}`;
+  window.location.href = `./comuna/${comuna}`;
 
 }
 ```
