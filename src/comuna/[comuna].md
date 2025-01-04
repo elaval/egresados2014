@@ -9,7 +9,6 @@ pager: false
 sql:
   establecimientos: ../NEM_PERCENTILES_AGGREGATED.parquet
   comunas: ../data/comunas.json
-
 ---
 
 ```sql id=comunas
