@@ -25,6 +25,8 @@ FROM establecimientos
 # Matrícula en carreras universitarias según comuna de egreso
 **${loaded ? '' : `Cargando datos para ${observable.params.comuna} ...`}** 
 
+Análisis en base a datos de jóvenes egresados de Educación Media en 2014 y sus respectivos registros de matrícula en Educación Superior entre 2015 y 2024.
+
 ```js
 const loaded = Mutable(false);
 const reset = () => loaded.value = true;
