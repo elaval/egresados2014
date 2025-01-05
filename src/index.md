@@ -48,11 +48,30 @@ const comuna = [...comunas].map(d => d.comuna).includes(comunaBrowser.toUpperCas
 
 ```js
 if (comuna) {
-  display(html`<h4>Cargándo párgina para **${comuna}**`)
+  display(html`<h4>Cargándo página para **${comuna}**`)
   window.location.href = window.location.href + `comuna/${comuna}`;
 }
 ```
 
 <div class="card">
 Usuario conectado desde ${comunaBrowser && comunaBrowser || "..."}
+
+${loaded ? `Redirigiendo a pagina con datos para comuna de ${comuna}` : "Cargando listado de comunas ..."}
+
+
 </div>
+
+
+
+<!-- JavaScript code to reset the loaded state if there are any establecimientos -->
+```js
+if ([...comunas].length > 0) {
+  reset()
+}
+```
+
+<!-- JavaScript code to define a mutable state 'loaded' and a reset function to set 'loaded' to true -->
+```js
+const loaded = Mutable(false);
+const reset = () => loaded.value = true;
+```
