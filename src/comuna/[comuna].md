@@ -11,34 +11,50 @@ sql:
   comunas: ../data/comunas.json
 ---
 
+```js
+import {analisisTrayectorias} from "../components/analisisTrayectorias.js";
+import {SankeyChart} from "../components/SankeyChart.js";
+```
+
+<!-- SQL query to select all data from the 'comunas' table -->
 ```sql id=comunas
 SELECT *
 FROM comunas
 ```
 
+<!-- SQL query to select all data from the 'establecimientos' table -->
 ```sql id=establecimientos
 SELECT * 
 FROM establecimientos
 ```
 
-
-# Matrícula en carreras universitarias según comuna de egreso
-**${loaded ? '' : `Cargando datos para ${observable.params.comuna} ...`}** 
-
-Análisis en base a datos de jóvenes egresados de Educación Media en 2014 y sus respectivos registros de matrícula en Educación Superior entre 2015 y 2024.
-
-```js
-const loaded = Mutable(false);
-const reset = () => loaded.value = true;
-```
-
+<!-- JavaScript code to reset the loaded state if there are any establecimientos -->
 ```js
 if ([...establecimientos].length > 0) {
   reset()
 }
 ```
 
+<!-- JavaScript code to define a mutable state 'loaded' and a reset function to set 'loaded' to true -->
 ```js
+const loaded = Mutable(false);
+const reset = () => loaded.value = true;
+```
+
+```js
+const targetRegion = [...comunas].find(d => d.comuna == observable.params.comuna)["cod_region"]
+```
+
+# Matrícula en carreras de Educación Superior según comuna de egreso
+
+<!-- Display a loading message until the data is loaded -->
+**${loaded ? '' : `Cargando datos para ${observable.params.comuna} ...`}** 
+
+<!-- Description of the analysis -->
+Análisis en base a datos de jóvenes egresados de Educación Media en 2014 y sus respectivos registros de matrícula en Educación Superior entre 2015 y 2024.
+
+```js
+// Define the selected region based on the available data
 const regionSeleccionada = (() =>{
   const options = _.chain([...comunas])
     .groupBy((d) => d.cod_region)
@@ -59,13 +75,14 @@ const regionSeleccionada = (() =>{
     format: (d) =>
       `${aliasRegiones[d.region]} (${d.numeroEstudiantes} estudiantes)`,
       label:"Región",
-          value: options.find(d => d.region == comunaSeleccionada3["COD_REG_RBD"])
+          value: options.find(d => d.region == targetRegion)
   }));
 })()
 ```
 
 ```js
-const comunaSeleccionada2 = (() => {
+// Define the selected comuna based on the selected region
+const comunaSeleccionada = (() => {
   const options = _.chain([...comunas])
     .filter((d) => d.cod_region == regionSeleccionada.region)
     .sortBy((d) => d.comuna)
@@ -79,34 +96,16 @@ const comunaSeleccionada2 = (() => {
 })()
 ```
 
-
 ```js
-if(comunaSeleccionada2.comuna !== observable.params.comuna) {
-window.location.href = `./${comunaSeleccionada2.comuna}`;
-
+// Redirect to the selected comuna's page if it is different from the current one
+if(comunaSeleccionada.comuna !== observable.params.comuna) {
+window.location.href = `./${comunaSeleccionada.comuna}`;
 }
-
 ```
-
-
-
-```sql id=[comunaSeleccionada3]
-SELECT  COD_REG_RBD, NOM_REG_RBD_A, COD_COM_RBD, NOM_COM_RBD, SUM(numeroEstudiantes)::Int as numeroEstudiantes
-FROM establecimientos
-WHERE NOM_COM_RBD = ${observable.params.comuna}
-GROUP BY COD_REG_RBD, NOM_REG_RBD_A, COD_COM_RBD, NOM_COM_RBD
-```
-
-
 
 
 ```js
-const comunaSeleccionada = ({
-    comuna : establecimientoSeleccionado["NOM_COM_RBD"]
-})
-```
-
-```js
+// Initialize the DuckDB client with the required data files
 const db = await DuckDBClient.of({
   datos : FileAttachment(`../data/comuna/${observable.params.comuna}.parquet`),
   establecimientos: FileAttachment(`../NEM_PERCENTILES_AGGREGATED.parquet`)  
@@ -115,24 +114,22 @@ const db = await DuckDBClient.of({
 
 <div class="card">
 
-## ${comunaSeleccionada3.NOM_COM_RBD}
+## ${comunaSeleccionada.comuna}
 ## Resumen General
-En ${comunaSeleccionada3.NOM_COM_RBD}, egresaron ${
-    comunaSeleccionada3.numeroEstudiantes
+En ${comunaSeleccionada.comuna}, egresaron ${
+    comunaSeleccionada.numeroEstudiantes
   } estudiantes en 2014.
 
 Entre 2015 y 2024:
-* ${statsComuna.totalEdSuperior} (${d3.format(".1%")(statsComuna.totalEdSuperior/comunaSeleccionada3.numeroEstudiantes)}) se matricularon en alguna carrera de Educación Superior.
+* ${statsComuna.totalEdSuperior} (${d3.format(".1%")(statsComuna.totalEdSuperior/comunaSeleccionada.numeroEstudiantes)}) se matricularon en alguna carrera de Educación Superior.
 
 ```js
+// Plot the bar chart for the selected comuna
 (() => {
- 
-
   return Plot.plot({
-
     marginTop:30,
     marks: [
-      Plot.barX([comunaSeleccionada3.numeroEstudiantes], {
+      Plot.barX([comunaSeleccionada.numeroEstudiantes], {
         x: d=>d,
         fill: "lightgray"
       }),
@@ -142,10 +139,9 @@ Entre 2015 y 2024:
       }),     
       Plot.text([cifrasTipoEdSuperiorComuna[0].total], {
         x: d=>d,
-        text: d=> `${d} (${d3.format(".1%")(d/comunaSeleccionada3.numeroEstudiantes)})`,
+        text: d=> `${d} (${d3.format(".1%")(d/comunaSeleccionada.numeroEstudiantes)})`,
         dy:-25
       }),
-
       Plot.ruleX([0])
     ]
   });
@@ -157,6 +153,7 @@ Entre 2015 y 2024:
 
 
 ```js
+// Define the data for the Sankey chart
 const flujo = [
   {
     source: "",
@@ -177,6 +174,7 @@ const flujo = [
 ```
 
 ```js
+// Plot the Sankey chart for the selected comuna
 const chartSankeyComuna = SankeyChart(
   {
     links: flujo
@@ -190,13 +188,12 @@ const chartSankeyComuna = SankeyChart(
         `${f(d)} TWh`
     )(d3.format(",.1~f")),
     width,
-    height: 500
+    height: 400
   }
 )
 ```
-
-
 ${chartSankeyComuna}
+
 <div class="text-muted small">Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales pueden no coincidir con el total en Educación Superior.</div>
 </div>
 
@@ -208,32 +205,36 @@ ${chartSankeyComuna}
 <div class="card" style="padding: 10;">  
 
 ## Carreras (hombres)
+<ul>
 ${carrerasComunaHombres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
+</ul>
 </div>
+
 <div class="card" style="padding: 10;">
 
-
 ## Carreras (mujeres)
+<ul>
 ${carrerasComunaMujeres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
+</ul>
 </div>
+</div>
+
+<div class="grid grid-cols-1">
 <div class="card" style="padding: 10;">
 
 ## Instituciones   
+<ul>
 ${universidadesComuna.slice(0,5).map(d => html`<li> ${d.nomb_inst} (${d.estudiantes} estudiantes)`)}
+</ul>
 </div>
 </div>
+</div>
 
+<div class="card">
 
-
-
-
-<table class="tablaEscuelas">
-<tbody>
-</tbody>
-</table>
-
-
+## Número de estudiantes según tipo de institucion de Educación Superior por estableciomiento en la comuna
 ```js
+// Generate the table for the number of students by type of institution
 html`<table class="table tablaEscuela2">
 <thead>
 <tr>
@@ -259,46 +260,53 @@ ${_.chain(cifrasTipoEdSuperiorPorEstablecimiento).sortBy(d => d.NOM_RBD).map(d =
 <td>${d.CFT}</td>
 </tr>`).value()}
 <tbody>
+<caption>Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales pueden no coincidir con el total en Educación Superior.</caption>
 </table>`
 ```
+</div>
 
-## Resumen de permanencia y cambio en carreras de pregrado
+## Permanencia y cambio en carreras de pregrado
 
 <div class="card">
 
-De los ${resumenCambiosComuna.totalMatriculados} estudiantes matriculados en carreras profesionales universitarias:  
-* ${d3.format(".1%")(resumenCambiosComuna.matriculados1Carrera/resumenCambiosComuna.totalMatriculados)} registraron matrícula en una única carrera dentro de la misma universidad.
-* ${d3.format(".1%")(resumenCambiosComuna.matriculadosProbablemente1Carrera/resumenCambiosComuna.totalMatriculados)} iniciaron en programas como Plan Común de Ingeniería o Bachillerato, que no implican un cambio real de carrera.
-* ${d3.format(".1%")(resumenCambiosComuna.matriculadosMultiplesCarreras/resumenCambiosComuna.totalMatriculados)} registraron matrícula en más de una carrera o en más de una universidad.
+De los ${resumenCambiosComuna.totalMatriculados} estudiantes matriculados en carreras de pregrado:  
+* ${resumenCambiosComuna.matriculados1Carrera} (${d3.format(".1%")(resumenCambiosComuna.matriculados1Carrera/resumenCambiosComuna.totalMatriculados)}) registraron matrícula en una única carrera dentro de la misma institución.
+* ${resumenCambiosComuna.matriculadosProbablemente1Carrera} (${d3.format(".1%")(resumenCambiosComuna.matriculadosProbablemente1Carrera/resumenCambiosComuna.totalMatriculados)}) iniciaron en programas como Plan Común de Ingeniería o Bachillerato, que corresponde a una "continuidad esperada" y no se considera un cambio real de carrera.
+* ${resumenCambiosComuna.matriculadosMultiplesCarreras} (${d3.format(".1%")(resumenCambiosComuna.matriculadosMultiplesCarreras/resumenCambiosComuna.totalMatriculados)}) registraron matrícula en más de una carrera o en más de una institución.
 
-</div>
+
+${chartProporciónCambioCarrera}
+
 
 ```js
-const chartMismaCarrera = (() => {
-  const dataPlot = _.chain(stats.data["1"])
-    .map((d) => d.map((e) => e.registros))
-    .flatten()
-    .flatten()
-    .sortBy((d) => `${d.area_carrera_generica}-${d.cod_inst}`)
-    .value();
-
+// Plot the bar chart for the proportion of students who changed careers
+const chartProporciónCambioCarrera = (() => {
   return Plot.plot({
-    x: { axis: "both", label:"Año" },
-    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
+    subtitle:"Proporción que registra cambios de carrera",
+    marginTop:30,
+    marginRight:30,
     marks: [
-      Plot.cell(dataPlot, {
-        y: "mrun",
-        x: "cat_periodo",
-        fill: (d) => `${d.area_carrera_generica}-${d.cod_inst}`,
-        tip: true,
-        title: (d) => `${d.area_carrera_generica}\n${d.nomb_inst}`
+      Plot.barX([resumenCambiosComuna.totalMatriculados], {
+        x: d => d,
+        fill: `lightgrey`,
+      }),
+      Plot.barX([resumenCambiosComuna.matriculadosMultiplesCarreras], {
+        x: d => d,
+        fill: (d) => `cambio`,
+      }),
+      Plot.text([resumenCambiosComuna.matriculadosMultiplesCarreras], {
+        text: d => `${d} (${d3.format(".1%")(d/resumenCambiosComuna.totalMatriculados)})`,
+        dy:-20,
+        x: d => d,
       })
     ]
   });
 })()
 ```
 
+
 ```js
+// Analyze the data for students who changed careers
 const infoCambioCarrera = (() => {
 
   const candidatosCambioCarrera = _.chain(statsTrayectoriaComuna.desgloseCarrerasPorEstudiante)
@@ -339,8 +347,9 @@ const muestraCambioCarreras = _.chain(infoCambioCarrera)
 .slice(0,10)
 .sampleSize(3)
 .map((d,i) => ({
-  caso: `Ejemplo ${i+1}`,
+  caso: `Estudiante ${i+1}`,
   carreras: d.diferentesCarreras.map(d => ({
+    año: d.cat_periodo,
     carrera: d.nomb_carrera,
     institucion: d.nomb_inst
   }))
@@ -351,16 +360,20 @@ const muestraCambioCarreras = _.chain(infoCambioCarrera)
 ### Ejemplos de casos de cambio de carrera
 <ul>
 ${muestraCambioCarreras.map(d => html`<li> ${d.caso}
-<ul>${d.carreras.map(e => html`<li class="small"> ${e.carrera} (${e.institucion})`)}</ul>`)}
+<ul>${d.carreras.map(e => html`<li class="small"> ${e.año} ${e.carrera} (${e.institucion})`)}</ul>`)}
 </ul>
 
+</div>
+
 ----------
+# Información de un establecimiento específico
 Seleccione un establecimiento específico en ${comunaSeleccionada.comuna} para obtener datos del establecimeinto detalles 
 
 ```js
+// Define the selected establishment based on the selected comuna
 const establecimientoSeleccionado = (() =>{
   const options = _.chain([...establecimientos])
-    .filter((d) => d.NOM_COM_RBD == comunaSeleccionada2.comuna)
+    .filter((d) => d.NOM_COM_RBD == comunaSeleccionada.comuna)
     .filter((d) => d.numeroEstudiantes > 20)
     .sortBy((d) => d.NOM_RBD)
     .value();
@@ -387,11 +400,9 @@ Entre 2015 y 2024:
 * ${statsEstablecimiento.totalEdSuperior} (${d3.format(".1%")(statsEstablecimiento.totalEdSuperior/establecimientoSeleccionado.numeroEstudiantes)}) se matricularon en alguna carrera de Educación Superior.
 
 ```js
+// Plot the bar chart for the selected establishment
 (() => {
- 
-
   return Plot.plot({
-
     marginTop:30,
     marginRight:30,
     marks: [
@@ -419,6 +430,7 @@ Entre 2015 y 2024:
   * ${statsEstablecimiento.totalCFT} en Centros de Formación Técnica.
 
 ```js
+// Define the data for the Sankey chart for the selected establishment
 const flujoEstablecimiento = [
   {
     source: "",
@@ -439,6 +451,7 @@ const flujoEstablecimiento = [
 ```
 
 ```js
+// Plot the Sankey chart for the selected establishment
 const chartSankeyEstablecimiento = SankeyChart(
   {
     links: flujoEstablecimiento
@@ -465,6 +478,7 @@ Nota: puede haber matriculas de la misma persona en más de un tipo de Instituci
 
 
 ```js
+// Calculate the statistics for the selected comuna
 const statsComuna = (() => {
   const totalEdSuperior = cifrasTipoEdSuperiorComuna[0].total;
 
@@ -496,6 +510,7 @@ const statsComuna = (() => {
 ```
 
 ```js
+// Calculate the statistics for the selected establishment
 const statsEstablecimiento = (() => {
   const totalEdSuperior = cifrasTipoEdSuperior[0].total;
 
@@ -552,8 +567,9 @@ ${universidades.slice(0,5).map(d => html`<li> ${d.nomb_inst} (${d.estudiantes} e
 
 
 ```js
+// Summarize the data for the selected establishment
 const resumen = (() => {
-  const candidatosCambioCarrera = _.chain(stats.desgloseCarrerasPorEstudiante)
+  const candidatosCambioCarrera = _.chain(statsTrayectoriaEstablecimiento.desgloseCarrerasPorEstudiante)
     .filter((d) => d.numCarreras !== "1")
     .map((d) => {
       const cantidatosCambioCarrera = d.itemsConCambioCarrera.map(
@@ -567,12 +583,12 @@ const resumen = (() => {
 
   const resumen = {
     egresados2014: establecimientoSeleccionado.numeroEstudiantes,
-    totalMatriculados: stats.numeroEstudiantesConMatricula,
-    matriculados1Carrera: stats.desgloseCarrerasPorEstudiante.find(
+    totalMatriculados: statsTrayectoriaEstablecimiento.numeroEstudiantesConMatricula,
+    matriculados1Carrera: statsTrayectoriaEstablecimiento.desgloseCarrerasPorEstudiante.find(
       (d) => d.numCarreras == "1"
     )["numEstudiantes"],
     matriculadosProbablemente1Carrera: _.chain(
-      stats.desgloseCarrerasPorEstudiante
+      statsTrayectoriaEstablecimiento.desgloseCarrerasPorEstudiante
     )
       .filter((d) => d.numCarreras !== "1")
       .map((d) => d.items)
@@ -582,7 +598,7 @@ const resumen = (() => {
       .uniq()
       .filter((d) => !candidatosCambioCarrera.includes(d))
       .value()["length"],
-    matriculadosMultiplesCarreras: _.chain(stats.desgloseCarrerasPorEstudiante)
+    matriculadosMultiplesCarreras: _.chain(statsTrayectoriaEstablecimiento.desgloseCarrerasPorEstudiante)
       .filter((d) => d.numCarreras !== "1")
       .map((d) => d.items)
       .flatten()
@@ -599,6 +615,7 @@ const resumen = (() => {
 
 
 ```js
+// Summarize the data for the selected comuna
 const resumenCambiosComuna = (() => {
   const candidatosCambioCarrera = _.chain(statsTrayectoriaComuna.desgloseCarrerasPorEstudiante)
     .filter((d) => d.numCarreras !== "1")
@@ -647,105 +664,31 @@ const resumenCambiosComuna = (() => {
 
 
 ```js
-const chartProbablementeMismaCarrera = (() => {
-  const candidatosCambioCarrera = _.chain(stats.desgloseCarrerasPorEstudiante)
-    .filter((d) => d.numCarreras !== "1")
-    .map((d) => d.itemsConCambioCarrera)
-    .flatten()
-    .flatten()
-    .map((d) => d.registros)
-    .flatten()
-    .map((d) => d.mrun)
-    .value();
-
-  const dataPlot = _.chain(stats.desgloseCarrerasPorEstudiante)
-    .filter((d) => d.numCarreras !== "1")
-    .map((d) => d.items)
-    .flatten()
-    .flatten()
-    .map((d) => d.registros)
-    .flatten()
-    .filter((d) => !candidatosCambioCarrera.includes(d.mrun))
-    .value();
-
-  return dataPlot.length ? Plot.plot({
-    x: { axis: "both", label:"Año" },
-    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
-    marks: [
-      Plot.cell(dataPlot, {
-        y: "mrun",
-        x: "cat_periodo",
-        fill: (d) => `${d.area_carrera_generica}-${d.cod_inst}`,
-        tip: true,
-        title: (d) => `${d.area_carrera_generica}\n${d.nomb_inst}`
-      })
-    ]
-  }) : html`<h3>No hay registros en esta condición</h3>`;
-})()
-```
-
-```js
-const chartCambioCarrera = (() => {
-  const candidatosCambioCarrera = _.chain(stats.desgloseCarrerasPorEstudiante)
-    .filter((d) => d.numCarreras !== "1")
-    .map((d) => d.itemsConCambioCarrera)
-    .flatten()
-    .flatten()
-    .map((d) => d.registros)
-    .flatten()
-    .map((d) => d.mrun)
-    .value();
-  const dataPlot = _.chain(stats.desgloseCarrerasPorEstudiante)
-    .filter((d) => d.numCarreras !== "1")
-    .map((d) => d.itemsConCambioCarrera)
-    .flatten()
-    .flatten()
-    .map((d) => d.registros)
-    .flatten()
-    .filter((d) => candidatosCambioCarrera.includes(d.mrun))
-    .value();
-
-  return Plot.plot({
-    x: { axis: "both", label: "Año" },
-    y: { tickFormat: (d, i) => i+1, label: "Estudiante" },
-    marks: [
-      Plot.cell(dataPlot, {
-        y: "mrun",
-        x: "cat_periodo",
-        fill: (d) => `${d.area_carrera_generica}-${d.cod_inst}`,
-        tip: true,
-        title: (d) => `${d.area_carrera_generica}\n${d.nomb_inst}`
-      })
-    ]
-  });
-})()
-```
-
-
-```js
-const stats = analisisTrayectorias(datosEstablecimiento)
+// Analyze the trajectories of students in the selected establishment and comuna
+const statsTrayectoriaEstablecimiento = analisisTrayectorias(datosEstablecimiento)
 const statsTrayectoriaComuna = analisisTrayectorias(datosComuna)
 ```
 
 ```js
+// Query the data for the selected comuna
 const datosComuna = [...await db.query(`
 SELECT *
 FROM datos
 WHERE nivel_global = 'Pregrado'
-/*WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'*/
 `)]
 ```
 
 ```js
+// Query the data for the selected establishment
 const datosEstablecimiento = [...await db.query(`
 SELECT *
 FROM datos
 WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado' 
-/*WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'*/
 `)]
 ```
 
 ```js
+// Query the universities in the selected comuna
 const universidadesComuna = [...await db.query(`
 WITH tabla as (
 SELECT DISTINCT mrun, nomb_inst
@@ -760,28 +703,12 @@ ORDER BY estudiantes DESC
 
 
 ```js
-const carrerasComuna = [...await db.query(`
-WITH tabla as (SELECT mrun,
-  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
-FROM datos
-/* WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%' */
-GROUP BY mrun, area_carrera_generica)
-
-SELECT carrera, count(*)::Int as estudiantes 
-FROM tabla
-GROUP BY carrera
-ORDER BY estudiantes DESC
-
-`)]
-```
-
-```js
+// Query the careers for male students in the selected comuna
 const carrerasComunaHombres = [...await db.query(`
 WITH tabla as (SELECT mrun,
   CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
 FROM datos
-WHERE gen_alu = 1
-/* WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%' */
+WHERE gen_alu = 1 AND nivel_global = 'Pregrado'
 GROUP BY mrun, area_carrera_generica)
 
 SELECT carrera, count(*)::Int as estudiantes 
@@ -793,12 +720,12 @@ ORDER BY estudiantes DESC
 ```
 
 ```js
+// Query the careers for female students in the selected comuna
 const carrerasComunaMujeres = [...await db.query(`
 WITH tabla as (SELECT mrun,
   CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
 FROM datos
-WHERE gen_alu = 2
-/* WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%' */
+WHERE gen_alu = 2 AND nivel_global = 'Pregrado'
 GROUP BY mrun, area_carrera_generica)
 
 SELECT carrera, count(*)::Int as estudiantes 
@@ -811,29 +738,12 @@ ORDER BY estudiantes DESC
 
 
 ```js
-const carrerasEstablecimiento = [...await db.query(`
-WITH tabla as (SELECT mrun,
-  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
-FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD}
-/* WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%' */
-GROUP BY mrun, area_carrera_generica)
-
-SELECT carrera, count(*)::Int as estudiantes 
-FROM tabla
-GROUP BY carrera
-ORDER BY estudiantes DESC
-
-`)]
-```
-
-```js
+// Query the careers for male students in the selected establishment
 const carrerasEstablecimientoHombres = [...await db.query(`
 WITH tabla as (SELECT mrun,
   CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
 FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND gen_alu = 1
-/* WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%' */
+WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND gen_alu = 1 AND nivel_global = 'Pregrado'
 GROUP BY mrun, area_carrera_generica)
 
 SELECT carrera, count(*)::Int as estudiantes 
@@ -845,12 +755,12 @@ ORDER BY estudiantes DESC
 ```
 
 ```js
+// Query the careers for female students in the selected establishment
 const carrerasEstablecimientoMujeres = [...await db.query(`
 WITH tabla as (SELECT mrun,
   CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
 FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND gen_alu = 2
-/* WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%' */
+WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND gen_alu = 2 AND nivel_global = 'Pregrado'
 GROUP BY mrun, area_carrera_generica)
 
 SELECT carrera, count(*)::Int as estudiantes 
@@ -863,11 +773,12 @@ ORDER BY estudiantes DESC
 
 
 ```js
+// Query the universities in the selected establishment
 const universidades = [...await db.query(`
 WITH tabla as (
 SELECT DISTINCT mrun, nomb_inst
 FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD})
+WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado') 
 
 SELECT nomb_inst, count(*) as estudiantes
 FROM tabla
@@ -877,6 +788,7 @@ ORDER BY estudiantes DESC
 ```
 
 ```js
+// Query the number of students by type of institution in the selected establishment
 const cifrasTipoEdSuperior = [...await db.query(`WITH tabla as (SELECT mrun, count(*) as registros,
   SUM(CASE WHEN tipo_inst_1 = 'Universidades' THEN 1 ELSE 0 END)::Int as Universidad,
   SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' THEN 1 ELSE 0 END)::Int as IP,
@@ -905,6 +817,7 @@ FROM tabla`)]
 ```
 
 ```js
+// Query the number of students by type of institution in the selected comuna
 const cifrasTipoEdSuperiorPorEstablecimiento = [...await db.query(`WITH tabla as (SELECT mrun, RBD_EGRESO, NOM_RBD, COD_DEPE2,count(*) as registros,
   SUM(CASE WHEN tipo_inst_1 = 'Universidades' THEN 1 ELSE 0 END)::Int as Universidad,
   SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' THEN 1 ELSE 0 END)::Int as IP,
@@ -935,6 +848,7 @@ GROUP BY tabla.RBD_EGRESO, tabla.NOM_RBD, tabla.COD_DEPE2`)]
 ```
 
 ```js
+// Query the number of students by type of institution in the selected comuna
 const cifrasTipoEdSuperiorComuna = [...await db.query(`WITH tabla as (SELECT mrun, count(*) as registros,
   SUM(CASE WHEN tipo_inst_1 = 'Universidades' THEN 1 ELSE 0 END)::Int as Universidad,
   SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' THEN 1 ELSE 0 END)::Int as IP,
@@ -1015,164 +929,7 @@ const ordenRegiones = ({
 })
 ```
 
-```js
-function getRemoteFile(url) {
-  const baseURL = new URL(url);
-  return {
-    file: {
-      name: baseURL.pathname,
-      url: function () {
-        return url;
-      }
-    }
-  };
-}
-```
 
-```js
-function analisisTrayectorias(data) {
-  function carreras(items) {
-    return _.chain(items)
-      .groupBy((d) => `${d.area_carrera_generica}-${d.nomb_inst}`)
-      .map((items, key) => ({ carrera: key, registros: items }))
-      .value();
-  }
-
-  function findIngPlanComunMismaU(items) {
-    return items.filter((d) => {
-      const primeraCarrera = _.first(d);
-      const otrasCarreras = _.slice(d, 1, d.length);
-
-      const primeraCarreraPlanComun = primeraCarrera.carrera.match(
-        /Ingeniería Civil, plan común/
-      );
-
-      const otrasCarrerasIngenieria = otrasCarreras.reduce(
-        (memo, e) => memo && e.carrera.match(/Ingeniería Civil|Ingenierías Civiles|Física y Astronomía|Geología|Geofísica/),
-        true
-      );
-
-      const otrasCarrerasMismaUniversidad = otrasCarreras.reduce(
-        (memo, e) =>
-          memo &&
-          e.registros[0].cod_inst == primeraCarrera.registros[0].cod_inst,
-        true
-      );
-
-      return (
-        primeraCarreraPlanComun &&
-        otrasCarrerasIngenieria &&
-        otrasCarrerasMismaUniversidad
-      );
-    });
-  }
-
-  function findBachilleratoMismaU(items) {
-    return items.filter((d) => {
-      const primeraCarrera = _.first(d);
-      const otrasCarreras = _.slice(d, 1, d.length);
-
-      const primeraCarreraBachilerato =
-        primeraCarrera.carrera.match(/Bachillerato/);
-
-      const otrasCarrerasMismaUniversidad = otrasCarreras.reduce(
-        (memo, e) =>
-          memo &&
-          e.registros[0].cod_inst == primeraCarrera.registros[0].cod_inst,
-        true
-      );
-
-      return primeraCarreraBachilerato && otrasCarrerasMismaUniversidad;
-    });
-  }
-
-  const porEstudiante = _.chain(data)
-    .groupBy((d) => d.mrun)
-    .map((items, key) => ({ mrun: key, registros: items }))
-    .value();
-
-  const carrerasPorEstudiante = porEstudiante.map((d) => carreras(d.registros));
-
-  const desgloseCarrerasPorEstudiante = _.chain(carrerasPorEstudiante)
-    .groupBy((d) => d.length)
-    .map((items, key) => ({
-      numCarreras: key,
-      numEstudiantes: items.length,
-      items: items,
-      itemsConCambioCarrera: items.filter(
-        (d) =>
-          !findIngPlanComunMismaU(items).includes(d) &&
-          !findBachilleratoMismaU(items).includes(d) &&
-          key !== "1"
-      ),
-
-      items_IngPlanComun: findIngPlanComunMismaU(items),
-      items_Bachillerato: findBachilleratoMismaU(items),
-
-      ingenieriaPlanComun: findIngPlanComunMismaU(items).length,
-      bachillerato: findBachilleratoMismaU(items).length,
-
-      carreras: _.chain(items)
-        .map((item) => ({
-          carreras: _.chain(item)
-            .map((d) => d.registros[0])
-            .map((d) => d.area_carrera_generica)
-            .join("|")
-            .value(),
-          item: item
-        }))
-        .groupBy((d) => d.carreras)
-        .map((items, key) => ({
-          carrras: key,
-          numEstudiantes: items.length,
-          registros: items
-        }))
-        .orderBy((d) => d.numEstudiantes)
-        .reverse()
-        .value()
-    }))
-    .value();
-
-  function cambioDeCarrera(desgloseCarrerasPorEstudiante) {
-    return desgloseCarrerasPorEstudiante
-      .filter((d) => d.numCarreras !== "1")
-      .reduce(
-        (memo, d) =>
-          memo + d.numEstudiantes - d.ingenieriaPlanComun - d.bachillerato,
-        0
-      );
-  }
-
-  return {
-    data: _.chain(carrerasPorEstudiante)
-      .groupBy((d) => d.length)
-      .value(),
-    numeroEstudiantesConMatricula: porEstudiante.length,
-    desgloseCarrerasPorEstudiante: desgloseCarrerasPorEstudiante,
-    estudiantesConCambioCarrera: cambioDeCarrera(desgloseCarrerasPorEstudiante)
-  };
-}
-```
-
-```js
-const dictComunas = (() => {
-  const dict = {};
-
-  _.chain([...establecimientos])
-    .groupBy((d) => d.NOM_COM_RBD)
-    .map((items, key) => ({
-      NOM_COM_RBD: key,
-      numeroEstudiantes: items.reduce(
-        (memo, d) => memo + d.numeroEstudiantes,
-        0
-      )
-    }))
-    .each((d) => (dict[d.NOM_COM_RBD] = d.numeroEstudiantes))
-    .value();
-
-  return dict;
-})()
-```
 ----------
 ## ¿Cómo se obtuvieron estos datos?
 Los datos utilizados en este análisis provienen de registros oficiales de egreso de Enseñanza Media y matrícula en Educación Superior en Chile, disponibles a través de Datos Abiertos del MINEDUC (https://datosabiertos.mineduc.cl/).
@@ -1197,180 +954,5 @@ En este análisis se considera como un caso de continuidad esperada cuando hay i
   
 Autor de esta página: Ernesto Laval https://bsky.app/profile/elaval.bsky.social
 
-```js
-const areaCarreraGenerica = [...await db.query(`
-SELECT area_carrera_generica, nomb_carrera,nomb_inst, count(*) as records
-FROM datos
-WHERE nivel_global = 'Pregrado' AND tipo_inst_1 = 'Universidades' AND nivel_carrera_2 like '%Carreras Profesionales%'
-GROUP BY area_carrera_generica, nomb_carrera, nomb_inst
-ORDER BY area_carrera_generica,nomb_inst
-`)]
-```
-```js
-import {require} from "npm:d3-require";
-```
-```js
-const d3Sankey = require.alias({"d3-array": d3, "d3-shape": d3, "d3-sankey": "d3-sankey@0.12.3/dist/d3-sankey.min.js"})("d3-sankey")
-```
 
-<script src="https://unpkg.com/d3-sankey@0"></script>
-
-
-```js
-// Copyright 2021-2023 Observable, Inc.
-// Released under the ISC license.
-// https://observablehq.com/@d3/sankey-diagram
-function SankeyChart({
-  nodes, // an iterable of node objects (typically [{id}, …]); implied by links if missing
-  links // an iterable of link objects (typically [{source, target}, …])
-}, {
-  format = ",", // a function or format specifier for values in titles
-  align = "justify", // convenience shorthand for nodeAlign
-  nodeId = d => d.id, // given d in nodes, returns a unique identifier (string)
-  nodeGroup, // given d in nodes, returns an (ordinal) value for color
-  nodeGroups, // an array of ordinal values representing the node groups
-  nodeLabel, // given d in (computed) nodes, text to label the associated rect
-  nodeTitle = d => `${d.id}\n${format(d.value)}`, // given d in (computed) nodes, hover text
-  nodeAlign = align, // Sankey node alignment strategy: left, right, justify, center
-  nodeSort, // comparator function to order nodes
-  nodeWidth = 15, // width of node rects
-  nodePadding = 10, // vertical separation between adjacent nodes
-  nodeLabelPadding = 6, // horizontal separation between node and label
-  nodeStroke = "currentColor", // stroke around node rects
-  nodeStrokeWidth, // width of stroke around node rects, in pixels
-  nodeStrokeOpacity, // opacity of stroke around node rects
-  nodeStrokeLinejoin, // line join for stroke around node rects
-  linkSource = ({source}) => source, // given d in links, returns a node identifier string
-  linkTarget = ({target}) => target, // given d in links, returns a node identifier string
-  linkValue = ({value}) => value, // given d in links, returns the quantitative value
-  linkPath = d3Sankey.sankeyLinkHorizontal(), // given d in (computed) links, returns the SVG path
-  linkTitle = d => `${d.source.id} → ${d.target.id}\n${format(d.value)}`, // given d in (computed) links
-  linkColor = "source-target", // source, target, source-target, or static color
-  linkStrokeOpacity = 0.5, // link stroke opacity
-  linkMixBlendMode = "multiply", // link blending mode
-  colors = d3.schemeTableau10, // array of colors
-  width = 640, // outer width, in pixels
-  height = 400, // outer height, in pixels
-  marginTop = 5, // top margin, in pixels
-  marginRight = 1, // right margin, in pixels
-  marginBottom = 5, // bottom margin, in pixels
-  marginLeft = 1, // left margin, in pixels
-} = {}) {
-  // Convert nodeAlign from a name to a function (since d3-sankey is not part of core d3).
-  if (typeof nodeAlign !== "function") nodeAlign = {
-    left: d3Sankey.sankeyLeft,
-    right: d3Sankey.sankeyRight,
-    center: d3Sankey.sankeyCenter
-  }[nodeAlign] ?? d3Sankey.sankeyJustify;
-
-  // Compute values.
-  const LS = d3.map(links, linkSource).map(intern);
-  const LT = d3.map(links, linkTarget).map(intern);
-  const LV = d3.map(links, linkValue);
-  if (nodes === undefined) nodes = Array.from(d3.union(LS, LT), id => ({id}));
-  const N = d3.map(nodes, nodeId).map(intern);
-  const G = nodeGroup == null ? null : d3.map(nodes, nodeGroup).map(intern);
-
-  // Replace the input nodes and links with mutable objects for the simulation.
-  nodes = d3.map(nodes, (_, i) => ({id: N[i]}));
-  links = d3.map(links, (_, i) => ({source: LS[i], target: LT[i], value: LV[i]}));
-
-  // Ignore a group-based linkColor option if no groups are specified.
-  if (!G && ["source", "target", "source-target"].includes(linkColor)) linkColor = "currentColor";
-
-  // Compute default domains.
-  if (G && nodeGroups === undefined) nodeGroups = G;
-
-  // Construct the scales.
-  const color = nodeGroup == null ? null : d3.scaleOrdinal(nodeGroups, colors);
-
-  // Compute the Sankey layout.
-  d3Sankey.sankey()
-      .nodeId(({index: i}) => N[i])
-      .nodeAlign(nodeAlign)
-      .nodeWidth(nodeWidth)
-      .nodePadding(nodePadding)
-      .nodeSort(nodeSort)
-      .extent([[marginLeft, marginTop], [width - marginRight, height - marginBottom]])
-    ({nodes, links});
-
-  // Compute titles and labels using layout nodes, so as to access aggregate values.
-  if (typeof format !== "function") format = d3.format(format);
-  const Tl = nodeLabel === undefined ? N : nodeLabel == null ? null : d3.map(nodes, nodeLabel);
-  const Tt = nodeTitle == null ? null : d3.map(nodes, nodeTitle);
-  const Lt = linkTitle == null ? null : d3.map(links, linkTitle);
-
-  // A unique identifier for clip paths (to avoid conflicts).
-  const uid = `O-${Math.random().toString(16).slice(2)}`;
-
-  const svg = d3.create("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", [0, 0, width, height])
-      .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
-
-  const node = svg.append("g")
-      .attr("stroke", nodeStroke)
-      .attr("stroke-width", nodeStrokeWidth)
-      .attr("stroke-opacity", nodeStrokeOpacity)
-      .attr("stroke-linejoin", nodeStrokeLinejoin)
-    .selectAll("rect")
-    .data(nodes)
-    .join("rect")
-      .attr("x", d => d.x0)
-      .attr("y", d => d.y0)
-      .attr("height", d => d.y1 - d.y0)
-      .attr("width", d => d.x1 - d.x0);
-
-  if (G) node.attr("fill", ({index: i}) => color(G[i]));
-  if (Tt) node.append("title").text(({index: i}) => Tt[i]);
-
-  const link = svg.append("g")
-      .attr("fill", "none")
-      .attr("stroke-opacity", linkStrokeOpacity)
-    .selectAll("g")
-    .data(links)
-    .join("g")
-      .style("mix-blend-mode", linkMixBlendMode);
-
-  if (linkColor === "source-target") link.append("linearGradient")
-      .attr("id", d => `${uid}-link-${d.index}`)
-      .attr("gradientUnits", "userSpaceOnUse")
-      .attr("x1", d => d.source.x1)
-      .attr("x2", d => d.target.x0)
-      .call(gradient => gradient.append("stop")
-          .attr("offset", "0%")
-          .attr("stop-color", ({source: {index: i}}) => color(G[i])))
-      .call(gradient => gradient.append("stop")
-          .attr("offset", "100%")
-          .attr("stop-color", ({target: {index: i}}) => color(G[i])));
-
-  link.append("path")
-      .attr("d", linkPath)
-      .attr("stroke", linkColor === "source-target" ? ({index: i}) => `url(#${uid}-link-${i})`
-          : linkColor === "source" ? ({source: {index: i}}) => color(G[i])
-          : linkColor === "target" ? ({target: {index: i}}) => color(G[i])
-          : linkColor)
-      .attr("stroke-width", ({width}) => Math.max(1, width))
-      .call(Lt ? path => path.append("title").text(({index: i}) => Lt[i]) : () => {});
-
-  if (Tl) svg.append("g")
-      .attr("font-family", "sans-serif")
-      .attr("font-size", 20)
-    .selectAll("text")
-    .data(nodes)
-    .join("text")
-      .attr("x", d => d.x0 < width / 2 ? d.x1 + nodeLabelPadding : d.x0 - nodeLabelPadding)
-      .attr("y", d => (d.y1 + d.y0) / 2)
-      .attr("dy", "0.35em")
-      .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
-      .text(({index: i}) => Tl[i]);
-
-  function intern(value) {
-    return value !== null && typeof value === "object" ? value.valueOf() : value;
-  }
-
-  return Object.assign(svg.node(), {scales: {color}});
-}
-```
 
