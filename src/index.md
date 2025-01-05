@@ -53,3 +53,6 @@ if (comuna) {
 }
 ```
 
+<div class="card">
+Usuario conectado desde ${comunaBrowser && comunaBrowser || "..."}
+</div>
