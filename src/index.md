@@ -46,23 +46,6 @@ const comuna = [...comunas].map(d => d.comuna).includes(comunaBrowser.toUpperCas
   : 'SANTIAGO'
 ```
 
-```js
-if (comuna) {
-  display(html`<h4>Cargándo página para **${comuna}**`)
-  window.location.href = window.location.href + `comuna/${comuna}`;
-}
-```
-
-<div class="card">
-Usuario conectado desde ${comunaBrowser && comunaBrowser || "..."}
-
-${loaded ? `Redirigiendo a pagina con datos para comuna de ${comuna}` : "Cargando listado de comunas ..."}
-
-
-</div>
-
-
-
 <!-- JavaScript code to reset the loaded state if there are any establecimientos -->
 ```js
 if ([...comunas].length > 0) {
@@ -75,3 +58,22 @@ if ([...comunas].length > 0) {
 const loaded = Mutable(false);
 const reset = () => loaded.value = true;
 ```
+
+```js
+if (comuna) {
+  window.location.href = window.location.href + `comuna/${comuna}`;
+}
+```
+
+<div class="card">
+Usuario conectado desde ${comunaBrowser && comunaBrowser || "..."}
+
+${loaded ? '' : `Cargando listado de comunas`}
+
+${loaded ? `Redirigiendo a pagina con datos para comuna de ${comuna}` : "..."}
+
+
+</div>
+
+
+
