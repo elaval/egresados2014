@@ -6,22 +6,14 @@ header: false
 footer: false
 pager: false
 
-
-sql:
-  comunas: ./data/comunas.json
 ---
 
-```sql id=comunas
-SELECT *
-FROM comunas
+```js
+const listaComunas = FileAttachment(`./data/comunas.json`).json()
 ```
 
 ```js
-const comlist = FileAttachment(`./data/comunas.json`).json()
-```
-
-```js
-display(comlist)
+const comuna = listaComunas && _.chain(listaComunas).sortBy(d => d.numeroEstudiantes).reverse().slice(0,20).sample().value()["comuna"] || null
 ```
 
 ```js
@@ -46,43 +38,44 @@ async function getUserComuna() {
 ```
 
 ```js
-const comunaBrowser = await getUserComuna()
+//const comunaBrowser = await getUserComuna()
 ```
 ```js
+/*
 const comuna = comlist.map(d => d.comuna).includes(comunaBrowser.toUpperCase()) 
   ? comunaBrowser.toUpperCase() 
   : 'SANTIAGO'
+  */
 ```
 
 <!-- JavaScript code to reset the loaded state if there are any establecimientos -->
 ```js
+/*
 if ([...comunas].length > 0) {
   reset()
 }
+*/
 ```
 
 <!-- JavaScript code to define a mutable state 'loaded' and a reset function to set 'loaded' to true -->
 ```js
+/*
 const loaded = Mutable(false);
 const reset = () => loaded.value = true;
+*/
 ```
 
 ```js
 if (comuna) {
-  //window.location.href = window.location.href + `comuna/${comuna}`;
+  window.location.href = window.location.href + `comuna/${comuna}`;
 }
 ```
 
-<div class="card">
-Usuario conectado desde ${comunaBrowser && comunaBrowser || "..."}
-
-${loaded ? '' : `Cargando listado de comunas`}
-
-${loaded ? `Redirigiendo a pagina con datos para comuna de ${comuna}` : "..."}
 
 
-${comlist.map(d => d.comuna).includes(comunaBrowser.toUpperCase())}
-</div>
+${comuna ? `Redirigiendo a pagina con datos para comuna de ${comuna}` : "Cargando daos ..."}
+
+
 
 
 
