@@ -16,6 +16,153 @@ import {analisisTrayectorias} from "../components/analisisTrayectorias.js";
 import {SankeyChart} from "../components/SankeyChart.js";
 ```
 
+```js
+// Initialize the DuckDB client with the required data files
+const dbMatricula = await DuckDBClient.of({
+  matricula : FileAttachment(`../data/agregadoPorComuna/matricula_${observable.params.comuna}.parquet`),
+  });
+```
+
+```js
+// Initialize the DuckDB client with the required data files
+const dbCarrera = await DuckDBClient.of({
+  carrera : FileAttachment(`../data/agregadoPorComuna/carrera_${observable.params.comuna}.parquet`),
+  });
+```
+
+```js
+// Initialize the DuckDB client with the required data files
+const dbCarreraPorRBD = await DuckDBClient.of({
+  carrera : FileAttachment(`../data/agregadoPorComuna/carreraPorRBD_${observable.params.comuna}.parquet`),
+  });
+```
+
+```js
+// Initialize the DuckDB client with the required data files
+const dbInstitucion = await DuckDBClient.of({
+  institucion : FileAttachment(`../data/agregadoPorComuna/institucion_${observable.params.comuna}.parquet`),
+  });
+```
+
+```js
+// Initialize the DuckDB client with the required data files
+const dbInstitucionPorRBD = await DuckDBClient.of({
+  institucion : FileAttachment(`../data/agregadoPorComuna/institucionPorRBD_${observable.params.comuna}.parquet`),
+  });
+```
+
+```js
+let matriculaComuna = [...(await dbMatricula.sql`
+SELECT sum(estudiantesEgresados)::Int AS estudiantesEgresados,
+  sum(matriculadosES)::Int AS matriculadosES,
+  sum(matriculadosU)::Int AS matriculadosU,
+  sum(matriculadosIP)::Int AS matriculadosIP,
+  sum(matriculadosCFT)::Int AS matriculadosCFT
+FROM matricula`)][0]
+```
+
+```js
+let matriculaEstablecimiento = [...(await dbMatricula.sql`
+SELECT estudiantesEgresados,
+  matriculadosES,
+  matriculadosU,
+  matriculadosIP,
+  matriculadosCFT
+FROM matricula
+WHERE RBD = ${establecimientoSeleccionado.RBD}`)][0]
+```
+
+```js
+let matriculaPorEstablecimiento = [...(await dbMatricula.sql`
+SELECT  *
+FROM matricula
+ORDER BY NOM_RBD ASC`)]
+```
+
+```js
+let carrerasComuna = [...(await dbCarrera.sql`
+WITH tabla as (SELECT gen_alu,
+  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, num_students as estudiantes
+  FROM carrera)
+
+SELECT gen_alu,carrera, sum(estudiantes)::Int as estudiantes
+FROM tabla
+GROUP BY gen_alu,carrera
+ORDER BY gen_alu,estudiantes DESC`)]
+```
+
+```js
+const carrerasHombresComuna = _.chain(carrerasComuna)
+  .filter(d => d.gen_alu == 1)
+  .sortBy(d => d.estudiantes)
+  .reverse()
+  .slice(0,5)
+  .value()
+```
+
+```js
+const carrerasMujeresComuna = _.chain(carrerasComuna)
+  .filter(d => d.gen_alu == 2)
+  .sortBy(d => d.estudiantes)
+  .reverse()
+  .slice(0,5)
+  .value()
+```
+
+```js
+let institucionesComuna = [...(await dbInstitucion.sql`
+WITH tabla as (SELECT nomb_inst as institucion, num_students as estudiantes
+  FROM institucion)
+
+SELECT institucion, estudiantes
+FROM tabla
+ORDER BY estudiantes DESC`)]
+```
+
+```js
+let carrerasEstablecimiento = [...(await dbCarreraPorRBD.sql`
+WITH tabla as (SELECT gen_alu,
+  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, num_students as estudiantes
+  FROM carrera
+  WHERE RBD = ${establecimientoSeleccionado.RBD})
+
+SELECT gen_alu,carrera, sum(estudiantes)::Int as estudiantes
+FROM tabla
+GROUP BY gen_alu,carrera
+ORDER BY gen_alu,estudiantes DESC`)]
+```
+
+
+```js
+const carrerasHombresEstablecimiento = _.chain(carrerasEstablecimiento)
+  .filter(d => d.gen_alu == 1)
+  .sortBy(d => d.estudiantes)
+  .reverse()
+  .slice(0,5)
+  .value()
+```
+
+```js
+const carrerasMujeresEstablecimiento = _.chain(carrerasEstablecimiento)
+  .filter(d => d.gen_alu == 2)
+  .sortBy(d => d.estudiantes)
+  .reverse()
+  .slice(0,5)
+  .value()
+```
+
+```js
+let institucionesEstablecimiento = [...(await dbInstitucionPorRBD.sql`
+WITH tabla as (SELECT nomb_inst as institucion, num_students as estudiantes
+  FROM institucion
+  WHERE RBD = ${establecimientoSeleccionado.RBD})
+
+
+SELECT institucion, estudiantes
+FROM tabla
+ORDER BY estudiantes DESC`)]
+```
+
 <!-- SQL query to select all data from the 'comunas' table -->
 ```sql id=comunas
 SELECT *
@@ -106,7 +253,7 @@ window.location.href = `./${comunaSeleccionada.comuna}`;
 
 ```js
 // Initialize the DuckDB client with the required data files
-const db = await DuckDBClient.of({
+const db_detalle = await DuckDBClient.of({
   datos : FileAttachment(`../data/comuna/${observable.params.comuna}.parquet`),
   establecimientos: FileAttachment(`../NEM_PERCENTILES_AGGREGATED.parquet`)  
   });
@@ -114,14 +261,16 @@ const db = await DuckDBClient.of({
 
 <div class="card">
 
+
+
 ## ${comunaSeleccionada.comuna}
 ## Resumen General
 En ${comunaSeleccionada.comuna}, egresaron ${
-    comunaSeleccionada.numeroEstudiantes
+    matriculaComuna.estudiantesEgresados
   } estudiantes en 2014.
 
 Entre 2015 y 2024:
-* ${statsComuna.totalEdSuperior} (${d3.format(".1%")(statsComuna.totalEdSuperior/comunaSeleccionada.numeroEstudiantes)}) se matricularon en alguna carrera de Educación Superior.
+* ${matriculaComuna.matriculadosES} (${d3.format(".1%")(matriculaComuna.matriculadosES/matriculaComuna.estudiantesEgresados)}) se matricularon en alguna carrera de Educación Superior.
 
 ```js
 // Plot the bar chart for the selected comuna
@@ -129,17 +278,17 @@ Entre 2015 y 2024:
   return Plot.plot({
     marginTop:30,
     marks: [
-      Plot.barX([comunaSeleccionada.numeroEstudiantes], {
+      Plot.barX([matriculaComuna.estudiantesEgresados], {
         x: d=>d,
         fill: "lightgray"
       }),
-     Plot.barX([cifrasTipoEdSuperiorComuna[0].total], {
+     Plot.barX([matriculaComuna.matriculadosES], {
         x: d=>d,
         fill: d => "Ed Superior"
       }),     
-      Plot.text([cifrasTipoEdSuperiorComuna[0].total], {
+      Plot.text([matriculaComuna.matriculadosES], {
         x: d=>d,
-        text: d=> `${d} (${d3.format(".1%")(d/comunaSeleccionada.numeroEstudiantes)})`,
+        text: d=> `${d} (${d3.format(".1%")(d/matriculaComuna.estudiantesEgresados)})`,
         dy:-25
       }),
       Plot.ruleX([0])
@@ -147,9 +296,9 @@ Entre 2015 y 2024:
   });
 })()
 ```
-  * ${statsComuna.totalUniversidad} en Universidades
-  * ${statsComuna.totalIP} en Institutos Profesionales
-  * ${statsComuna.totalCFT} en Centros de Formación Técnica
+  * ${matriculaComuna.matriculadosU} en Universidades
+  * ${matriculaComuna.matriculadosIP} en Institutos Profesionales
+  * ${matriculaComuna.matriculadosCFT} en Centros de Formación Técnica
 
 
 ```js
@@ -157,18 +306,18 @@ Entre 2015 y 2024:
 const flujo = [
   {
     source: "",
-    target: `Universidad (${cifrasTipoEdSuperiorComuna[0].Universidad})`,
-    value: cifrasTipoEdSuperiorComuna[0].Universidad
+    target: `Universidad (${matriculaComuna.matriculadosU})`,
+    value: matriculaComuna.matriculadosU
   },
   {
     source: "",
-    target: `IP (${cifrasTipoEdSuperiorComuna[0].IP})`,
-    value: cifrasTipoEdSuperiorComuna[0].IP
+    target: `IP (${matriculaComuna.matriculadosIP})`,
+    value: matriculaComuna.matriculadosIP
   },
   {
     source: "",
-    target: `CFT (${cifrasTipoEdSuperiorComuna[0].CFT})`,
-    value: cifrasTipoEdSuperiorComuna[0].CFT
+    target: `CFT (${matriculaComuna.matriculadosCFT})`,
+    value: matriculaComuna.matriculadosCFT
   }
 ]
 ```
@@ -201,12 +350,13 @@ ${chartSankeyComuna}
 ## Las 5 carreras e instituciones más frecuentes
 <div class="small muted">Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
 
-<div class="grid grid-cols-2">
+<div class="grid grid-cols-2">  
+
 <div class="card" style="padding: 10;">  
 
 ## Carreras (hombres)
 <ul>
-${carrerasComunaHombres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
+${carrerasHombresComuna.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
 </ul>
 </div>
 
@@ -214,7 +364,7 @@ ${carrerasComunaHombres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudian
 
 ## Carreras (mujeres)
 <ul>
-${carrerasComunaMujeres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
+${carrerasMujeresComuna.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
 </ul>
 </div>
 </div>
@@ -224,7 +374,7 @@ ${carrerasComunaMujeres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudian
 
 ## Instituciones   
 <ul>
-${universidadesComuna.slice(0,5).map(d => html`<li> ${d.nomb_inst} (${d.estudiantes} estudiantes)`)}
+${institucionesComuna.slice(0,5).map(d => html`<li> ${d.institucion} (${d.estudiantes} estudiantes)`)}
 </ul>
 </div>
 </div>
@@ -251,13 +401,13 @@ html`<table class="table tablaEscuela2">
 </tr>
 </thead>
 <tbody>
-${_.chain(cifrasTipoEdSuperiorPorEstablecimiento).sortBy(d => d.NOM_RBD).map(d => html`<tr>
+${_.chain(matriculaPorEstablecimiento).sortBy(d => d.NOM_RBD).map(d => html`<tr>
 <td>${d.NOM_RBD}</td>
 <td>${d.estudiantesEgresados}</td>
-<td>${d.total}</td>
-<td>${d.Universidad}</td>
-<td>${d.IP}</td>
-<td>${d.CFT}</td>
+<td>${d.matriculadosES}</td>
+<td>${d.matriculadosU}</td>
+<td>${d.matriculadosIP}</td>
+<td>${d.matriculadosCFT}</td>
 </tr>`).value()}
 <tbody>
 <caption>Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales pueden no coincidir con el total en Educación Superior.</caption>
@@ -367,7 +517,7 @@ ${muestraCambioCarreras.map(d => html`<li> ${d.caso}
 
 ----------
 # Información de un establecimiento específico
-Seleccione un establecimiento específico en ${comunaSeleccionada.comuna} para obtener datos del establecimeinto detalles 
+Seleccione un establecimiento específico en ${comunaSeleccionada.comuna} para obtener datos del establecimiento detalles 
 
 ```js
 // Define the selected establishment based on the selected comuna
@@ -393,11 +543,11 @@ const establecimientoSeleccionado = (() =>{
 
 ## Resumen General
 En ${establecimientoSeleccionado.NOM_RBD}, egresaron ${
-    establecimientoSeleccionado.numeroEstudiantes
+    matriculaEstablecimiento.estudiantesEgresados
   } estudiantes en 2014.
 
 Entre 2015 y 2024:
-* ${statsEstablecimiento.totalEdSuperior} (${d3.format(".1%")(statsEstablecimiento.totalEdSuperior/establecimientoSeleccionado.numeroEstudiantes)}) se matricularon en alguna carrera de Educación Superior.
+* ${matriculaEstablecimiento.matriculadosES} (${d3.format(".1%")(matriculaEstablecimiento.matriculadosES/matriculaEstablecimiento.estudiantesEgresados)}) se matricularon en alguna carrera de Educación Superior.
 
 ```js
 // Plot the bar chart for the selected establishment
@@ -406,17 +556,17 @@ Entre 2015 y 2024:
     marginTop:30,
     marginRight:30,
     marks: [
-      Plot.barX([establecimientoSeleccionado.numeroEstudiantes], {
+      Plot.barX([matriculaEstablecimiento.estudiantesEgresados], {
         x: d=>d,
         fill: "lightgray"
       }),
-     Plot.barX([statsEstablecimiento.totalEdSuperior], {
+     Plot.barX([matriculaEstablecimiento.matriculadosES], {
         x: d=>d,
         fill: d => "Ed Superior"
       }),     
-      Plot.text([statsEstablecimiento.totalEdSuperior], {
+      Plot.text([matriculaEstablecimiento.matriculadosES], {
         x: d=>d,
-        text: d=> `${d} (${d3.format(".1%")(d/establecimientoSeleccionado.numeroEstudiantes)})`,
+        text: d=> `${d} (${d3.format(".1%")(d/matriculaEstablecimiento.estudiantesEgresados)})`,
         dy:-25
       }),
 
@@ -425,27 +575,27 @@ Entre 2015 y 2024:
   });
 })()
 ```
-  * ${statsEstablecimiento.totalUniversidad} en Universidades ${statsEstablecimiento.totalUniversidad_Carrera_Profesional == statsEstablecimiento.totalUniversidad ? `en carreras profesionales` : `(${statsEstablecimiento.totalUniversidad_Carrera_Profesional} en carreras profesionales)`}.
-  * ${statsEstablecimiento.totalIP} en Institutos Profesionales ${statsEstablecimiento.totalIP_Carrera_Profesional == statsEstablecimiento.totalIP ? `en carreras profesionales` : `(${statsEstablecimiento.totalIP_Carrera_Profesional} en carreras profesionales)`}.
-  * ${statsEstablecimiento.totalCFT} en Centros de Formación Técnica.
+  * ${matriculaEstablecimiento.matriculadosU} en Universidades
+  * ${matriculaEstablecimiento.matriculadosIP} en Institutos Profesionales
+  * ${matriculaEstablecimiento.matriculadosCFT} en Centros de Formación Técnica.
 
 ```js
 // Define the data for the Sankey chart for the selected establishment
 const flujoEstablecimiento = [
   {
     source: "",
-    target: `Universidad (${cifrasTipoEdSuperior[0].Universidad})`,
-    value: cifrasTipoEdSuperior[0].Universidad
+    target: `Universidad (${matriculaEstablecimiento.matriculadosU})`,
+    value: matriculaEstablecimiento.matriculadosU
   },
   {
     source: "",
-    target: `IP (${cifrasTipoEdSuperior[0].IP})`,
-    value: cifrasTipoEdSuperior[0].IP
+    target: `IP (${matriculaEstablecimiento.matriculadosIP})`,
+    value: matriculaEstablecimiento.matriculadosIP
   },
   {
     source: "",
-    target: `CFT (${cifrasTipoEdSuperior[0].CFT})`,
-    value: cifrasTipoEdSuperior[0].CFT
+    target: `CFT (${matriculaEstablecimiento.matriculadosCFT})`,
+    value: matriculaEstablecimiento.matriculadosCFT
   }
 ]
 ```
@@ -477,71 +627,6 @@ Nota: puede haber matriculas de la misma persona en más de un tipo de Instituci
 </div>
 
 
-```js
-// Calculate the statistics for the selected comuna
-const statsComuna = (() => {
-  const totalEdSuperior = cifrasTipoEdSuperiorComuna[0].total;
-
-  const totalUniversidad = cifrasTipoEdSuperiorComuna[0].Universidad;
-  const totalUniversidad_Carrera_Profesional =
-    cifrasTipoEdSuperiorComuna[0].Universidad_Carrera_Profesional;
-
-  const totalUniversidad_Carrera_Técnica =
-    cifrasTipoEdSuperiorComuna[0].Universidad_Carrera_Técnica;
-
-  const totalIP = cifrasTipoEdSuperiorComuna[0].IP;
-  const totalIP_Carrera_Profesional =
-    cifrasTipoEdSuperiorComuna[0].IP_Carrera_Profesional;
-  const totalIP_Carrera_Técnica = cifrasTipoEdSuperiorComuna[0].IP_Carrera_Técnica;
-
-  const totalCFT = cifrasTipoEdSuperiorComuna[0].CFT;
-
-  return {
-    totalEdSuperior: totalEdSuperior,
-    totalUniversidad: totalUniversidad,
-    totalUniversidad_Carrera_Profesional: totalUniversidad_Carrera_Profesional,
-    totalUniversidad_Carrera_Técnica:totalUniversidad_Carrera_Técnica,
-    totalIP: totalIP,
-    totalIP_Carrera_Profesional: totalIP_Carrera_Profesional,
-    totalIP_Carrera_Técnica: totalIP_Carrera_Técnica,
-    totalCFT: totalCFT
-  };
-})()
-```
-
-```js
-// Calculate the statistics for the selected establishment
-const statsEstablecimiento = (() => {
-  const totalEdSuperior = cifrasTipoEdSuperior[0].total;
-
-  const totalUniversidad = cifrasTipoEdSuperior[0].Universidad;
-  const totalUniversidad_Carrera_Profesional =
-    cifrasTipoEdSuperior[0].Universidad_Carrera_Profesional;
-
-  const totalUniversidad_Carrera_Técnica =
-    cifrasTipoEdSuperior[0].Universidad_Carrera_Técnica;
-
-  const totalIP = cifrasTipoEdSuperior[0].IP;
-  const totalIP_Carrera_Profesional =
-    cifrasTipoEdSuperior[0].IP_Carrera_Profesional;
-  const totalIP_Carrera_Técnica = cifrasTipoEdSuperior[0].IP_Carrera_Técnica;
-
-  const totalCFT = cifrasTipoEdSuperior[0].CFT;
-
-  return {
-    totalEdSuperior: totalEdSuperior,
-    totalUniversidad: totalUniversidad,
-    totalUniversidad_Carrera_Profesional: totalUniversidad_Carrera_Profesional,
-    totalUniversidad_Carrera_Técnica:totalUniversidad_Carrera_Técnica,
-    totalIP: totalIP,
-    totalIP_Carrera_Profesional: totalIP_Carrera_Profesional,
-    totalIP_Carrera_Técnica: totalIP_Carrera_Técnica,
-    totalCFT: totalCFT
-  };
-})()
-```
-
-
 </div>
 
 ## Las 5 carreras e instituciones más frecuentes
@@ -551,17 +636,17 @@ const statsEstablecimiento = (() => {
 <div class="card" style="padding: 10;">  
 
 ## Carreras (hombres)
-${carrerasEstablecimientoHombres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
+${carrerasHombresEstablecimiento.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
 </div>
 <div class="card" style="padding: 10;">  
 
 ## Carreras (mujeres)
-${carrerasEstablecimientoMujeres.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
+${carrerasMujeresEstablecimiento.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
 </div>
 <div class="card" style="padding: 10;">
 
 ## Instituciones   
-${universidades.slice(0,5).map(d => html`<li> ${d.nomb_inst} (${d.estudiantes} estudiantes)`)}
+${institucionesEstablecimiento.slice(0,5).map(d => html`<li> ${d.institucion} (${d.estudiantes} estudiantes)`)}
 </div>
 </div>
 
@@ -671,7 +756,7 @@ const statsTrayectoriaComuna = analisisTrayectorias(datosComuna)
 
 ```js
 // Query the data for the selected comuna
-const datosComuna = [...await db.query(`
+const datosComuna = [...await db_detalle.query(`
 SELECT *
 FROM datos
 WHERE nivel_global = 'Pregrado'
@@ -680,201 +765,16 @@ WHERE nivel_global = 'Pregrado'
 
 ```js
 // Query the data for the selected establishment
-const datosEstablecimiento = [...await db.query(`
+const datosEstablecimiento = [...await db_detalle.query(`
 SELECT *
 FROM datos
 WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado' 
 `)]
 ```
 
-```js
-// Query the universities in the selected comuna
-const universidadesComuna = [...await db.query(`
-WITH tabla as (
-SELECT DISTINCT mrun, nomb_inst
-FROM datos)
-
-SELECT nomb_inst, count(*) as estudiantes
-FROM tabla
-GROUP BY nomb_inst
-ORDER BY estudiantes DESC
-`)]
-```
 
 
-```js
-// Query the careers for male students in the selected comuna
-const carrerasComunaHombres = [...await db.query(`
-WITH tabla as (SELECT mrun,
-  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
-FROM datos
-WHERE gen_alu = 1 AND nivel_global = 'Pregrado'
-GROUP BY mrun, area_carrera_generica)
 
-SELECT carrera, count(*)::Int as estudiantes 
-FROM tabla
-GROUP BY carrera
-ORDER BY estudiantes DESC
-
-`)]
-```
-
-```js
-// Query the careers for female students in the selected comuna
-const carrerasComunaMujeres = [...await db.query(`
-WITH tabla as (SELECT mrun,
-  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
-FROM datos
-WHERE gen_alu = 2 AND nivel_global = 'Pregrado'
-GROUP BY mrun, area_carrera_generica)
-
-SELECT carrera, count(*)::Int as estudiantes 
-FROM tabla
-GROUP BY carrera
-ORDER BY estudiantes DESC
-
-`)]
-```
-
-
-```js
-// Query the careers for male students in the selected establishment
-const carrerasEstablecimientoHombres = [...await db.query(`
-WITH tabla as (SELECT mrun,
-  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
-FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND gen_alu = 1 AND nivel_global = 'Pregrado'
-GROUP BY mrun, area_carrera_generica)
-
-SELECT carrera, count(*)::Int as estudiantes 
-FROM tabla
-GROUP BY carrera
-ORDER BY estudiantes DESC
-
-`)]
-```
-
-```js
-// Query the careers for female students in the selected establishment
-const carrerasEstablecimientoMujeres = [...await db.query(`
-WITH tabla as (SELECT mrun,
-  CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, count(*) as estudiantes
-FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND gen_alu = 2 AND nivel_global = 'Pregrado'
-GROUP BY mrun, area_carrera_generica)
-
-SELECT carrera, count(*)::Int as estudiantes 
-FROM tabla
-GROUP BY carrera
-ORDER BY estudiantes DESC
-
-`)]
-```
-
-
-```js
-// Query the universities in the selected establishment
-const universidades = [...await db.query(`
-WITH tabla as (
-SELECT DISTINCT mrun, nomb_inst
-FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado') 
-
-SELECT nomb_inst, count(*) as estudiantes
-FROM tabla
-GROUP BY nomb_inst
-ORDER BY estudiantes DESC
-`)]
-```
-
-```js
-// Query the number of students by type of institution in the selected establishment
-const cifrasTipoEdSuperior = [...await db.query(`WITH tabla as (SELECT mrun, count(*) as registros,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' THEN 1 ELSE 0 END)::Int as Universidad,
-  SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' THEN 1 ELSE 0 END)::Int as IP,
-  SUM(CASE WHEN tipo_inst_1 = 'Centros de Formación Técnica' THEN 1 ELSE 0 END)::Int as CFT,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' AND nivel_carrera_2 = 'Carreras Profesionales' THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Profesional,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' AND nivel_carrera_2 = 'Carreras Técnicas' THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Técnica,
-    SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' AND nivel_carrera_2 = 'Carreras Profesionales' THEN 1 ELSE 0 END)::Int as IP_Carrera_Profesional,
-  SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' AND nivel_carrera_2 = 'Carreras Técnicas' THEN 1 ELSE 0 END)::Int as IP_Carrera_Técnica,
-
-
-FROM datos
-WHERE RBD_EGRESO = ${establecimientoSeleccionado.RBD} AND nivel_global = 'Pregrado'
-GROUP BY mrun)
-
-SELECT 
-SUM(CASE WHEN registros > 0 THEN 1 ELSE 0 END)::Int as total,
-SUM(CASE WHEN Universidad > 0 THEN 1 ELSE 0 END)::Int as Universidad,
-SUM(CASE WHEN IP > 0 THEN 1 ELSE 0 END)::Int as IP,
-SUM(CASE WHEN CFT > 0 THEN 1 ELSE 0 END)::Int as CFT,
-SUM(CASE WHEN Universidad_Carrera_Profesional > 0 THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Profesional,
-SUM(CASE WHEN Universidad_Carrera_Técnica > 0 THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Técnica,
-SUM(CASE WHEN IP_Carrera_Profesional > 0 THEN 1 ELSE 0 END)::Int as IP_Carrera_Profesional,
-SUM(CASE WHEN IP_Carrera_Técnica > 0 THEN 1 ELSE 0 END)::Int as IP_Carrera_Técnica,
-
-FROM tabla`)]
-```
-
-```js
-// Query the number of students by type of institution in the selected comuna
-const cifrasTipoEdSuperiorPorEstablecimiento = [...await db.query(`WITH tabla as (SELECT mrun, RBD_EGRESO, NOM_RBD, COD_DEPE2,count(*) as registros,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' THEN 1 ELSE 0 END)::Int as Universidad,
-  SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' THEN 1 ELSE 0 END)::Int as IP,
-  SUM(CASE WHEN tipo_inst_1 = 'Centros de Formación Técnica' THEN 1 ELSE 0 END)::Int as CFT,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' AND nivel_carrera_2 = 'Carreras Profesionales' THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Profesional,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' AND nivel_carrera_2 = 'Carreras Técnicas' THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Técnica,
-    SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' AND nivel_carrera_2 = 'Carreras Profesionales' THEN 1 ELSE 0 END)::Int as IP_Carrera_Profesional,
-  SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' AND nivel_carrera_2 = 'Carreras Técnicas' THEN 1 ELSE 0 END)::Int as IP_Carrera_Técnica,
-
-
-FROM datos
-WHERE nivel_global = 'Pregrado'
-GROUP BY mrun, RBD_EGRESO, NOM_RBD, COD_DEPE2)
-
-SELECT tabla.RBD_EGRESO, tabla.NOM_RBD, tabla.COD_DEPE2, MAX(establecimientos.numeroEstudiantes)::Int as estudiantesEgresados,
-SUM(CASE WHEN registros > 0 THEN 1 ELSE 0 END)::Int as total,
-SUM(CASE WHEN Universidad > 0 THEN 1 ELSE 0 END)::Int as Universidad,
-SUM(CASE WHEN IP > 0 THEN 1 ELSE 0 END)::Int as IP,
-SUM(CASE WHEN CFT > 0 THEN 1 ELSE 0 END)::Int as CFT,
-SUM(CASE WHEN Universidad_Carrera_Profesional > 0 THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Profesional,
-SUM(CASE WHEN Universidad_Carrera_Técnica > 0 THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Técnica,
-SUM(CASE WHEN IP_Carrera_Profesional > 0 THEN 1 ELSE 0 END)::Int as IP_Carrera_Profesional,
-SUM(CASE WHEN IP_Carrera_Técnica > 0 THEN 1 ELSE 0 END)::Int as IP_Carrera_Técnica,
-
-FROM tabla
-LEFT JOIN establecimientos ON tabla.RBD_EGRESO = establecimientos.RBD
-GROUP BY tabla.RBD_EGRESO, tabla.NOM_RBD, tabla.COD_DEPE2`)]
-```
-
-```js
-// Query the number of students by type of institution in the selected comuna
-const cifrasTipoEdSuperiorComuna = [...await db.query(`WITH tabla as (SELECT mrun, count(*) as registros,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' THEN 1 ELSE 0 END)::Int as Universidad,
-  SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' THEN 1 ELSE 0 END)::Int as IP,
-  SUM(CASE WHEN tipo_inst_1 = 'Centros de Formación Técnica' THEN 1 ELSE 0 END)::Int as CFT,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' AND nivel_carrera_2 = 'Carreras Profesionales' THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Profesional,
-  SUM(CASE WHEN tipo_inst_1 = 'Universidades' AND nivel_carrera_2 = 'Carreras Técnicas' THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Técnica,
-    SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' AND nivel_carrera_2 = 'Carreras Profesionales' THEN 1 ELSE 0 END)::Int as IP_Carrera_Profesional,
-  SUM(CASE WHEN tipo_inst_1 = 'Institutos Profesionales' AND nivel_carrera_2 = 'Carreras Técnicas' THEN 1 ELSE 0 END)::Int as IP_Carrera_Técnica,
-
-
-FROM datos
-WHERE nivel_global = 'Pregrado'
-GROUP BY mrun)
-
-SELECT 
-SUM(CASE WHEN registros > 0 THEN 1 ELSE 0 END)::Int as total,
-SUM(CASE WHEN Universidad > 0 THEN 1 ELSE 0 END)::Int as Universidad,
-SUM(CASE WHEN IP > 0 THEN 1 ELSE 0 END)::Int as IP,
-SUM(CASE WHEN CFT > 0 THEN 1 ELSE 0 END)::Int as CFT,
-SUM(CASE WHEN Universidad_Carrera_Profesional > 0 THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Profesional,
-SUM(CASE WHEN Universidad_Carrera_Técnica > 0 THEN 1 ELSE 0 END)::Int as Universidad_Carrera_Técnica,
-SUM(CASE WHEN IP_Carrera_Profesional > 0 THEN 1 ELSE 0 END)::Int as IP_Carrera_Profesional,
-SUM(CASE WHEN IP_Carrera_Técnica > 0 THEN 1 ELSE 0 END)::Int as IP_Carrera_Técnica,
-
-FROM tabla`)]
-```
 
 
 

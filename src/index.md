@@ -1,6 +1,12 @@
 ---
 toc: false
 
+sidebar: false
+header: false
+footer: false
+pager: false
+
+
 sql:
   comunas: ./data/comunas.json
 ---
@@ -42,7 +48,7 @@ const comuna = [...comunas].map(d => d.comuna).includes(comunaBrowser.toUpperCas
 
 ```js
 if (comuna) {
-  display(window.location.href + `comuna/${comuna}`)
+  display(html`<h4>Cargándo párgina para **${comuna}**`)
   window.location.href = window.location.href + `comuna/${comuna}`;
 }
 ```
