@@ -263,9 +263,9 @@ const db_detalle = await DuckDBClient.of({
 
 
 
-## ${comunaSeleccionada.comuna}
+## ${observable.params.comuna}
 ## Resumen General
-En ${comunaSeleccionada.comuna}, egresaron ${
+En ${observable.params.comuna}, egresaron ${
     matriculaComuna.estudiantesEgresados
   } estudiantes en 2014.
 
