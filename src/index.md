@@ -17,6 +17,14 @@ FROM comunas
 ```
 
 ```js
+const comlist = FileAttachment(`./data/comunas.json`).json()
+```
+
+```js
+display(comlist)
+```
+
+```js
 async function getUserComuna() {
   try {
     // Fetch user location data from ipapi
@@ -41,7 +49,7 @@ async function getUserComuna() {
 const comunaBrowser = await getUserComuna()
 ```
 ```js
-const comuna = [...comunas].map(d => d.comuna).includes(comunaBrowser.toUpperCase()) 
+const comuna = comlist.map(d => d.comuna).includes(comunaBrowser.toUpperCase()) 
   ? comunaBrowser.toUpperCase() 
   : 'SANTIAGO'
 ```
@@ -61,7 +69,7 @@ const reset = () => loaded.value = true;
 
 ```js
 if (comuna) {
-  window.location.href = window.location.href + `comuna/${comuna}`;
+  //window.location.href = window.location.href + `comuna/${comuna}`;
 }
 ```
 
@@ -73,6 +81,7 @@ ${loaded ? '' : `Cargando listado de comunas`}
 ${loaded ? `Redirigiendo a pagina con datos para comuna de ${comuna}` : "..."}
 
 
+${comlist.map(d => d.comuna).includes(comunaBrowser.toUpperCase())}
 </div>
 
 
