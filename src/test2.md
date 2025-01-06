@@ -235,12 +235,51 @@ ${_.chain(matriculaPorEstablecimiento).sortBy(d => d.NOM_RBD).map(d => html`<tr>
 
 
 ```js
-const db = (async () => {
+const dbMatricula = (async () => {
   const db =  await DuckDBClient.of({});
   db.query(`
     CREATE TABLE matricula AS
     SELECT * 
     FROM "${`https://raw.githubusercontent.com/elaval/data_egresados_2014/main/agregadoPorComuna/matricula_${comunaSeleccionada.comuna}.parquet`}"`)
+ return db
+})()
+```
+
+```js
+const dbCarrera = (async () => {
+  const db =  await DuckDBClient.of({});
+  db.query(`
+    CREATE TABLE carrera AS
+    SELECT * 
+    FROM "${`https://raw.githubusercontent.com/elaval/data_egresados_2014/main/agregadoPorComuna/carrera_${comunaSeleccionada.comuna}.parquet`}"`)
+  return db
+})()
+```
+
+```js
+const dbInstitucion = (async () => {
+  const db =  await DuckDBClient.of({});
+  db.query(`
+    CREATE TABLE institucion AS
+    SELECT * 
+    FROM "${`https://raw.githubusercontent.com/elaval/data_egresados_2014/main/agregadoPorComuna/institucion_${comunaSeleccionada.comuna}.parquet`}"`)
+ /*
+ db.query(`
+    CREATE TABLE institucionPorRBD AS
+    SELECT * 
+    FROM "${`https://raw.githubusercontent.com/elaval/data_egresados_2014/main/agregadoPorComuna/institucionPorRBD_${comunaSeleccionada.comuna}.parquet`}"`)
+ db.query(`
+    CREATE TABLE carreraPorRBD AS
+    SELECT * 
+    FROM "${`https://raw.githubusercontent.com/elaval/data_egresados_2014/main/agregadoPorComuna/carreraPorRBD_${comunaSeleccionada.comuna}.parquet`}"`)
+  */
+ return db
+})()
+```
+
+```js
+const db = (async () => {
+  const db =  await DuckDBClient.of({});
  db.query(`
     CREATE TABLE carrera AS
     SELECT * 
@@ -265,18 +304,25 @@ const db = (async () => {
 
 
 ```js
-let matriculaComuna = [...(await db.sql`
-SELECT sum(estudiantesEgresados)::Int AS estudiantesEgresados,
+let matriculaComuna_ = [...(await dbMatricula.sql`
+SELECT 
+  ${comunaSeleccionada.comuna} as comuna,
+  sum(estudiantesEgresados)::Int AS estudiantesEgresados,
   sum(matriculadosES)::Int AS matriculadosES,
   sum(matriculadosU)::Int AS matriculadosU,
   sum(matriculadosIP)::Int AS matriculadosIP,
   sum(matriculadosCFT)::Int AS matriculadosCFT
 FROM matricula`)][0]
 ```
+```js
+let matriculaComuna = matriculaComuna_["comuna"] == comunaSeleccionada.comuna ? matriculaComuna_ : {}
+```
 
 ```js
-let matriculaEstablecimiento = [...(await db.sql`
-SELECT estudiantesEgresados,
+let matriculaEstablecimiento = [...(await dbMatricula.sql`
+SELECT 
+  ${comunaSeleccionada.comuna} as comuna,
+  estudiantesEgresados,
   matriculadosES,
   matriculadosU,
   matriculadosIP,
@@ -287,19 +333,20 @@ WHERE RBD = ${establecimientoSeleccionado.RBD}`)][0]
 
 
 ```js
-let matriculaPorEstablecimiento = [...(await db.sql`
-SELECT  *
+let matriculaPorEstablecimiento = [...(await dbMatricula.sql`
+SELECT   ${comunaSeleccionada.comuna} as comuna, *
 FROM matricula
 ORDER BY NOM_RBD ASC`)]
 ```
 
 ```js
-let carrerasComuna = [...(await db.sql`
+let carrerasComuna = [...(await dbCarrera.sql`
 WITH tabla as (SELECT gen_alu,
   CASE WHEN area_carrera_generica like '%Ingeniería Civil%' OR area_carrera_generica like '%Ingenierías Civiles%' THEN 'Ingeniería Civil' ELSE area_carrera_generica END as carrera, num_students as estudiantes
   FROM carrera)
 
-SELECT gen_alu,carrera, sum(estudiantes)::Int as estudiantes
+SELECT   ${comunaSeleccionada.comuna} as comuna,
+gen_alu,carrera, sum(estudiantes)::Int as estudiantes
 FROM tabla
 GROUP BY gen_alu,carrera
 ORDER BY gen_alu,estudiantes DESC`)]
@@ -326,11 +373,11 @@ const carrerasMujeresComuna = _.chain(carrerasComuna)
 
 
 ```js
-let institucionesComuna = [...(await db.sql`
+let institucionesComuna = [...(await dbInstitucion.sql`
 WITH tabla as (SELECT nomb_inst as institucion, num_students as estudiantes
   FROM institucion)
 
-SELECT institucion, estudiantes
+SELECT  ${comunaSeleccionada.comuna} as comuna, institucion, estudiantes
 FROM tabla
 ORDER BY estudiantes DESC`)]
 ```
@@ -343,7 +390,7 @@ WITH tabla as (SELECT gen_alu,
   FROM carreraPorRBD
   WHERE RBD = ${establecimientoSeleccionado.RBD})
 
-SELECT gen_alu,carrera, sum(estudiantes)::Int as estudiantes
+SELECT  ${comunaSeleccionada.comuna} as comuna, gen_alu,carrera, sum(estudiantes)::Int as estudiantes
 FROM tabla
 GROUP BY gen_alu,carrera
 ORDER BY gen_alu,estudiantes DESC`)]
@@ -375,7 +422,7 @@ WITH tabla as (SELECT nomb_inst as institucion, num_students as estudiantes
   WHERE RBD = ${establecimientoSeleccionado.RBD})
 
 
-SELECT institucion, estudiantes
+SELECT  ${comunaSeleccionada.comuna} as comuna, institucion, estudiantes
 FROM tabla
 ORDER BY estudiantes DESC`)]
 ```
