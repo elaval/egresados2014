@@ -8,6 +8,7 @@ pager: false
 
 ---
 
+
 ```js
 const listaComunas = FileAttachment(`./data/comunas.json`).json()
 ```
