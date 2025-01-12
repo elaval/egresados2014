@@ -350,7 +350,7 @@ ${[...institucionesComuna].slice(0,5).map(d => html`<li> ${d.institucion} (${d.e
 </div>
 </div>
 
-### Establecimeintos en la communa
+### Establecimientos en la communa
 <div class="card">
 
 ## Número de estudiantes según tipo de institucion de Educación Superior por estableciomiento en la comuna
@@ -398,8 +398,8 @@ ${_.chain([...matriculaPorEstablecimiento]).sortBy(d => d.NOM_RBD).map(d => html
 
 
 De los ${matriculaComuna.matriculadosES} estudiantes matriculados en carreras de pregrado:  
+* ${resumenMultiplesCarrerasComuna.count_mas_de_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_mas_de_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en más de una carrera o en más de una institución entre 2015 y 2024.
 * ${resumenMultiplesCarrerasComuna.count_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en una única carrera dentro de la misma institución.
-* ${resumenMultiplesCarrerasComuna.count_mas_de_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_mas_de_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en más de una carrera o en más de una institución.
 
 
 ${chartProporciónCambioCarrera}
