@@ -1,10 +1,3 @@
-import { comunas } from './src/data/comunas.js';
-console.log(comunas);
-
-// Create the dynamicPaths array
-const dynamicPaths = comunas.map(d => `/comuna/${d.comuna}`);
-
-console.log(dynamicPaths);
 
 // See https://observablehq.com/framework/config for documentation.
 export default {
@@ -34,7 +27,7 @@ export default {
   `,
   // The path to the source root.
   root: "src",
-  dynamicPaths: dynamicPaths
+  // dynamicPaths: dynamicPaths
 
   // Some additional configuration options and their defaults:
   // theme: "default", // try "light", "dark", "slate", etc.
