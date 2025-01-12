@@ -11,16 +11,16 @@ sql:
   matricula: ./data/matricula_Chile.parquet
   institucion: ./data/institucion_Chile.parquet
   institucionPorEstablecimiento: ./data/institucionPorRBD_Chile.parquet
-  establecimientos: ../NEM_PERCENTILES_AGGREGATED.parquet
-  comunas: ../data/comunas.json
+  establecimientos: ./NEM_PERCENTILES_AGGREGATED.parquet
+  comunas: ./data/comunas.json
+  numcarreras_por_comuna: ./data/numcarreras_por_comuna.parquet
+  muestra_comunas_3_or_2_carreras: ./data/muestra_comunas_3_or_2_carreras.parquet
 ---
 
 ```js
 import {analisisTrayectorias} from "./components/analisisTrayectorias.js";
 import {SankeyChart} from "./components/SankeyChart.js";
 ```
-
-
 
 <!-- SQL query to select all data from the 'comunas' table -->
 ```sql id=comunas
@@ -149,6 +149,20 @@ FROM tabla
 ORDER BY estudiantes DESC
 ```
 
+
+```sql id=[resumenMultiplesCarrerasComuna]
+SELECT *
+FROM numcarreras_por_comuna
+WHERE NOM_COM_RBD = ${comunaSeleccionada.comuna}
+```
+
+```sql id=muestraMultiplesCarreras
+SELECT *
+FROM muestra_comunas_3_or_2_carreras
+WHERE NOM_COM_RBD = ${comunaSeleccionada.comuna}
+```
+
+
 <!-- JavaScript code to reset the loaded state if there are any establecimientos -->
 ```js
 if ([...establecimientos].length > 0 && [...matriculaComuna].length > 0 && [...carrerasComuna].length > 0  && [...institucionesComuna].length > 0) {
@@ -163,6 +177,8 @@ const reset = () => loaded.value = true;
 ```
 
 # Matrícula en carreras de Educación Superior según comuna de egreso
+Análisis en base a datos de jóvenes egresados de Educación Media en 2014 y sus respectivos registros de matrícula en Educación Superior entre 2015 y 2024.
+
 
 <!-- Display a loading message until the data is loaded -->
 **${loaded ? '' : `Cargando datos ...`}** 
@@ -205,7 +221,7 @@ const comunaSeleccionada = (() => {
   return view(Inputs.select(options, {
     format: (d) => `${d.comuna} (${d.numeroEstudiantes} estudiantes)`,
     label:"Comuna",
-    value: _.sample(options)
+    value: _.chain(options).maxBy(d => d.numeroEstudiantes).value()
   }));
 })()
 ```
@@ -213,7 +229,9 @@ const comunaSeleccionada = (() => {
 
 
 ## ${comunaSeleccionada.comuna}
-## Resumen General
+<div class="card" style="padding: 10;">  
+
+## Resumen de la comuna
 En ${comunaSeleccionada.comuna}, egresaron ${
     matriculaComuna.estudiantesEgresados
   } estudiantes en 2014.
@@ -293,11 +311,11 @@ const chartSankeyComuna = SankeyChart(
 ${chartSankeyComuna}
 
 <div class="text-muted small">Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales pueden no coincidir con el total en Educación Superior.</div>
+</div><br>
+
 </div>
 
-
-## Las 5 carreras e instituciones más frecuentes
-<div class="small muted">Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
+### 5 carreras e instituciones más frecuentes en la comuna
 
 <div class="grid grid-cols-2">  
 
@@ -317,9 +335,12 @@ ${carrerasMujeresComuna.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudian
 </ul>
 </div>
 </div>
+<div class="small muted">Nota: Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
+
 
 <div class="grid grid-cols-1">
 <div class="card" style="padding: 10;">
+
 
 ## Instituciones   
 <ul>
@@ -329,16 +350,19 @@ ${[...institucionesComuna].slice(0,5).map(d => html`<li> ${d.institucion} (${d.e
 </div>
 </div>
 
+### Establecimeintos en la communa
 <div class="card">
 
 ## Número de estudiantes según tipo de institucion de Educación Superior por estableciomiento en la comuna
 ```js
 // Generate the table for the number of students by type of institution
-html`<table class="table tablaEscuela2">
+html`
+<div class="table-responsive">
+<table class="table tablaEscuela2">
 <thead>
 <tr>
 <th colspan="2"></th>
-<th colspan="3">Matrícula Superior</th>
+<th colspan="4">Matrícula Ed. Superior</th>
 </tr>
 <tr>
 <th>Establecimiento</th>
@@ -360,10 +384,72 @@ ${_.chain([...matriculaPorEstablecimiento]).sortBy(d => d.NOM_RBD).map(d => html
 </tr>`).value()}
 <tbody>
 <caption>Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales pueden no coincidir con el total en Educación Superior.</caption>
-</table>`
+</table>
+</div>`
 ```
 </div>
 
+
+
+## Permanencia y cambio en carreras de pregrado
+
+<div class="card">
+
+
+
+De los ${matriculaComuna.matriculadosES} estudiantes matriculados en carreras de pregrado:  
+* ${resumenMultiplesCarrerasComuna.count_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en una única carrera dentro de la misma institución.
+* ${resumenMultiplesCarrerasComuna.count_mas_de_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_mas_de_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en más de una carrera o en más de una institución.
+
+
+${chartProporciónCambioCarrera}
+
+
+```js
+// Plot the bar chart for the proportion of students who changed careers
+const chartProporciónCambioCarrera = (() => {
+  return Plot.plot({
+    subtitle:"Proporción que registra cambios de carrera",
+    marginTop:30,
+    marginRight:30,
+    marks: [
+      Plot.barX([matriculaComuna.matriculadosES], {
+        x: d => d,
+        fill: `lightgrey`,
+      }),
+      Plot.barX([resumenMultiplesCarrerasComuna.count_mas_de_1_carrera], {
+        x: d => d,
+        fill: (d) => `cambio`,
+      }),
+      Plot.text([resumenMultiplesCarrerasComuna.count_mas_de_1_carrera], {
+        text: d => `${d} (${d3.format(".1%")(d/matriculaComuna.matriculadosES)})`,
+        dy:-20,
+        x: d => d,
+      })
+    ]
+  });
+})()
+```
+
+```js
+const muestraCambioCarreras = _.chain([...muestraMultiplesCarreras])
+.groupBy(d => d.mrun)
+.map((items,mrun) => ({mrun:mrun, carreras: items}))
+.value()
+
+```
+
+
+### Ejemplos de casos de cambio de carrera
+<ul>
+${_.chain([...muestraMultiplesCarreras])
+.groupBy(d => d.mrun)
+.map((items,mrun) => ({mrun:mrun, carreras: items}))
+.map((d,i) => html`<li> Estudiante ${i+1}
+<ul>${d.carreras.map(e => html`<li class="small"> ${e.cat_periodo} ${e.area_carrera_generica} (${e.nomb_inst})`)}</ul>`).value()}
+</ul>
+
+</div>
 
 ----------
 # Información de un establecimiento específico
@@ -480,7 +566,6 @@ Nota: puede haber matriculas de la misma persona en más de un tipo de Instituci
 </div>
 
 ## Las 5 carreras e instituciones más frecuentes
-<div class="small muted">Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
 
 <div class="grid grid-cols-2">
 <div class="card" style="padding: 10;">  
@@ -493,6 +578,11 @@ ${carrerasHombresEstablecimiento.slice(0,5).map(d => html`<li> ${d.carrera} (${d
 ## Carreras (mujeres)
 ${carrerasMujeresEstablecimiento.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
 </div>
+</div>
+<div class="small muted">Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
+
+<div class="grid grid-cols-1">
+
 <div class="card" style="padding: 10;">
 
 ## Instituciones   
@@ -550,3 +640,31 @@ const ordenRegiones = ({
   12: 15
 })
 ```
+
+----------
+## ¿Cómo se obtuvieron estos datos?
+Los datos utilizados en este análisis provienen de registros oficiales de egreso de Enseñanza Media y matrícula en Educación Superior en Chile, disponibles a través de Datos Abiertos del MINEDUC (https://datosabiertos.mineduc.cl/).
+
+* Datos de jóvenes egresados de Educación Media: https://datosabiertos.mineduc.cl/notas-de-ensenanza-media-y-percentil-jovenes/
+* Datos de matrícula en Educación Superior: https://datosabiertos.mineduc.cl/matricula-en-educacion-superior/
+
+## Notas
+* **Áreas Genéricas**
+Hay carreras que formalmente tienen nombres diferentes pero en la práctica corresponden a la misma área. Por ejemplo: "AGRONOMIA E INGENIERIA FORESTAL" en la PONTIFICIA UNIVERSIDAD CATOLICA DE CHILE e "INGENIERIA AGRONOMICA" en la UNIVERSIDAD DE CHILE corresponden al área genérica "Agronomía". Para efectos del análisis en esta exploración se utiliza la clasificación de "Área Genérica" (campo **area_carrera_generica**) del Sistema de Información de la Educación Superior (SIES).
+
+* **Ingeniería Civil**
+Aún utilizando **area_carrera_generica** para el caso de Ingeniería Civil existent distintas carreras en la familia de carreras de "Ingeniería Civil" (Ej. Ingeniería Civil Electrónica, Ingeniería Civil Eléctrica, Ingeniería Civil Industrial, ...). En este análisis se agrupan las carreras que incluyen "Ingeniería Civil" o "Ingenierías Civiles" en su nombre bajo el rótulo "Ingeniería Civil" al identificar las carreras más frecuentes.
+
+
+* **Plan común de Ingeniería Civil**
+El plan común de Ingeniería Civil en Chile es un programa inicial ofrecido por muchas universidades que permite a los estudiantes comenzar sus estudios en ingeniería sin elegir inmediatamente una especialidad. Es un camino introductorio en el que se entregan las bases científicas, matemáticas y técnicas necesarias para luego optar por una especialidad específica dentro de las distintas ramas de la Ingeniería Civil.
+
+  En la Universidad de Chile, por ejemplo, estudiantes que se matriculan inicialmente en Plan Común pueden continuar con especialidades de la carrera de Ingeniería Civil, y también con la carrera de Geología y licenciaturas en Física, Astronomía y Geofísica (fuente: https://ingenieria.uchile.cl/carreras/plan-comun).
+
+* **Ingreso vía Bachillerato o College**
+El ingreso a la educación superior a través de programas como Bachillerato o College representa una alternativa cada vez más popular para los estudiantes que desean explorar diferentes áreas del conocimiento antes de comprometerse con una carrera específica. Estos programas están diseñados para ofrecer una formación inicial general en áreas como ciencias, humanidades, artes o ingeniería. Los estudiantes pueden acceder a una continuidad académica hacia carreras específicas dentro de la misma institución, facilitando la transición hacia programas más especializados.
+
+En este análisis se considera como un caso de continuidad esperada cuando hay indicios de que los estudiantes ingresaron a Plan Común de Ingeniería o a Bachillerato / College y luego registran matrícula en carreras de la misma universidad. Para el Plan Común de Ingeniería Civil se considera continuidad si luego hay matrícula en otra carrera de Ingeniería Civil, Geología, Física, Astronomía o Geofísica en la misma universidad.
+
+  
+Autor de esta página: Ernesto Laval https://bsky.app/profile/elaval.bsky.social
