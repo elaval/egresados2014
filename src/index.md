@@ -176,8 +176,10 @@ const loaded = Mutable(false);
 const reset = () => loaded.value = true;
 ```
 
-# Matrícula en carreras de Educación Superior según comuna de egreso
-Análisis en base a datos de jóvenes egresados de Educación Media en 2014 y sus respectivos registros de matrícula en Educación Superior entre 2015 y 2024.
+# Matrícula en Educación Superior según comuna o establecimiento de egreso
+## Reporte en base a carreras e instituciones de Educación Superior en que se matriculan jovenes egresados de Enseñanza media durante los 9 años siguientes a su egreso.
+
+Este análisis explora los datos de matrícula en Educación Superior de jóvenes egresados de Educación Media en 2014
 
 
 <!-- Display a loading message until the data is loaded -->
@@ -232,9 +234,7 @@ const comunaSeleccionada = (() => {
 <div class="card" style="padding: 10;">  
 
 ## Resumen de la comuna
-En ${comunaSeleccionada.comuna}, egresaron ${
-    matriculaComuna.estudiantesEgresados
-  } estudiantes en 2014.
+En 2014, egresaron **${matriculaComuna.estudiantesEgresados}** estudiantes de Eucación Media en **${comunaSeleccionada.comuna}**.
 
 Entre 2015 y 2024:
 * ${matriculaComuna.matriculadosES} (${d3.format(".1%")(matriculaComuna.matriculadosES/matriculaComuna.estudiantesEgresados)}) se matricularon en alguna carrera de Educación Superior.
@@ -310,7 +310,7 @@ const chartSankeyComuna = SankeyChart(
 ```
 ${chartSankeyComuna}
 
-<div class="text-muted small">Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales pueden no coincidir con el total en Educación Superior.</div>
+<div class="text-muted small">Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales  no necesariamente coinciden con el total en Educación Superior.</div>
 </div><br>
 
 </div>
@@ -335,7 +335,7 @@ ${carrerasMujeresComuna.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudian
 </ul>
 </div>
 </div>
-<div class="small muted">Nota: Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
+<div class="small muted">Nota: Se agruparon especialidades de Ingeniería Civil para un análisis más claro de las carreras más frecuentes.</div>
 
 
 <div class="grid grid-cols-1">
@@ -383,7 +383,7 @@ ${_.chain([...matriculaPorEstablecimiento]).sortBy(d => d.NOM_RBD).map(d => html
 <td>${d.matriculadosCFT}</td>
 </tr>`).value()}
 <tbody>
-<caption>Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales pueden no coincidir con el total en Educación Superior.</caption>
+<caption>Nota: puede haber matriculas de la misma persona en más de un tipo de Institución, por lo que las sumas de las cifras parciales  no necesariamente coinciden con el total en Educación Superior.</caption>
 </table>
 </div>`
 ```
@@ -391,14 +391,14 @@ ${_.chain([...matriculaPorEstablecimiento]).sortBy(d => d.NOM_RBD).map(d => html
 
 
 
-## Permanencia y cambio en carreras de pregrado
+## Cambios y permanencia en carreras de pregrado
 
 <div class="card">
 
 
 
 De los ${matriculaComuna.matriculadosES} estudiantes matriculados en carreras de pregrado:  
-* ${resumenMultiplesCarrerasComuna.count_mas_de_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_mas_de_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en más de una carrera o en más de una institución entre 2015 y 2024.
+* **${resumenMultiplesCarrerasComuna.count_mas_de_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_mas_de_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en más de una carrera** o en más de una institución entre 2015 y 2024.
 * ${resumenMultiplesCarrerasComuna.count_1_carrera} (${d3.format(".1%")(resumenMultiplesCarrerasComuna.count_1_carrera/matriculaComuna.matriculadosES)}) registraron matrícula en una única carrera dentro de la misma institución.
 
 
@@ -453,7 +453,7 @@ ${_.chain([...muestraMultiplesCarreras])
 
 ----------
 # Información de un establecimiento específico
-Seleccione un establecimiento específico en ${comunaSeleccionada.comuna} para obtener datos del establecimiento detalles 
+Seleccione un establecimiento específico en ${comunaSeleccionada.comuna} para obtener detalles del establecimiento  
 
 ```js
 // Define the selected establishment based on the selected comuna
@@ -478,9 +478,7 @@ const establecimientoSeleccionado = (() =>{
 <div class="card" style="padding: 10;">  
 
 ## Resumen General
-En ${establecimientoSeleccionado.NOM_RBD}, egresaron ${
-    matriculaEstablecimiento.estudiantesEgresados
-  } estudiantes en 2014.
+En 2014, egresaron **${ matriculaEstablecimiento.estudiantesEgresados}** estudiantes de **${establecimientoSeleccionado.NOM_RBD}**.
 
 Entre 2015 y 2024:
 * ${matriculaEstablecimiento.matriculadosES} (${d3.format(".1%")(matriculaEstablecimiento.matriculadosES/matriculaEstablecimiento.estudiantesEgresados)}) se matricularon en alguna carrera de Educación Superior.
@@ -643,28 +641,24 @@ const ordenRegiones = ({
 
 ----------
 ## ¿Cómo se obtuvieron estos datos?
-Los datos utilizados en este análisis provienen de registros oficiales de egreso de Enseñanza Media y matrícula en Educación Superior en Chile, disponibles a través de Datos Abiertos del MINEDUC (https://datosabiertos.mineduc.cl/).
+Los datos utilizados en este análisis provienen de registros de egreso de Enseñanza Media y matrícula en Educación Superior en Chile, disponibles a través de Datos Abiertos del MINEDUC (https://datosabiertos.mineduc.cl/).
 
 * Datos de jóvenes egresados de Educación Media: https://datosabiertos.mineduc.cl/notas-de-ensenanza-media-y-percentil-jovenes/
 * Datos de matrícula en Educación Superior: https://datosabiertos.mineduc.cl/matricula-en-educacion-superior/
 
-## Notas
-* **Áreas Genéricas**
-Hay carreras que formalmente tienen nombres diferentes pero en la práctica corresponden a la misma área. Por ejemplo: "AGRONOMIA E INGENIERIA FORESTAL" en la PONTIFICIA UNIVERSIDAD CATOLICA DE CHILE e "INGENIERIA AGRONOMICA" en la UNIVERSIDAD DE CHILE corresponden al área genérica "Agronomía". Para efectos del análisis en esta exploración se utiliza la clasificación de "Área Genérica" (campo **area_carrera_generica**) del Sistema de Información de la Educación Superior (SIES).
+## Notas metodológicas
+* **Carreras Genéricas**
+Carreras similares, como Ingeniería Agronómica o Agronomía e Ingeniería Forestal se agrupan bajo áreas genéricas para facilitar el análisis (se utiliza la definición de Aréa Carrera Genérica del Sistema de Información de la Educación Superior).
 
 * **Ingeniería Civil**
-Aún utilizando **area_carrera_generica** para el caso de Ingeniería Civil existent distintas carreras en la familia de carreras de "Ingeniería Civil" (Ej. Ingeniería Civil Electrónica, Ingeniería Civil Eléctrica, Ingeniería Civil Industrial, ...). En este análisis se agrupan las carreras que incluyen "Ingeniería Civil" o "Ingenierías Civiles" en su nombre bajo el rótulo "Ingeniería Civil" al identificar las carreras más frecuentes.
+Distintas carreras en la familia de "Ingeniería Civil" (Ej. Ingeniería Civil Electrónica, Ingeniería Civil Eléctrica, Ingeniería Civil Industrial, ...) se agrupan bajo "Ingeniería Civil" al reportar carreras más frecuentes.
 
 
 * **Plan común de Ingeniería Civil**
-El plan común de Ingeniería Civil en Chile es un programa inicial ofrecido por muchas universidades que permite a los estudiantes comenzar sus estudios en ingeniería sin elegir inmediatamente una especialidad. Es un camino introductorio en el que se entregan las bases científicas, matemáticas y técnicas necesarias para luego optar por una especialidad específica dentro de las distintas ramas de la Ingeniería Civil.
-
-  En la Universidad de Chile, por ejemplo, estudiantes que se matriculan inicialmente en Plan Común pueden continuar con especialidades de la carrera de Ingeniería Civil, y también con la carrera de Geología y licenciaturas en Física, Astronomía y Geofísica (fuente: https://ingenieria.uchile.cl/carreras/plan-comun).
+Al analizar cambios de carrera, no se considera un cambio de carrera cuando la matrícula inicial es en Plan Común de Ingeniería Civil y luego existe matrícula en carreras de Ingeniería Civil, Geología o Astronomía y Física en la misma institución.
 
 * **Ingreso vía Bachillerato o College**
-El ingreso a la educación superior a través de programas como Bachillerato o College representa una alternativa cada vez más popular para los estudiantes que desean explorar diferentes áreas del conocimiento antes de comprometerse con una carrera específica. Estos programas están diseñados para ofrecer una formación inicial general en áreas como ciencias, humanidades, artes o ingeniería. Los estudiantes pueden acceder a una continuidad académica hacia carreras específicas dentro de la misma institución, facilitando la transición hacia programas más especializados.
-
-En este análisis se considera como un caso de continuidad esperada cuando hay indicios de que los estudiantes ingresaron a Plan Común de Ingeniería o a Bachillerato / College y luego registran matrícula en carreras de la misma universidad. Para el Plan Común de Ingeniería Civil se considera continuidad si luego hay matrícula en otra carrera de Ingeniería Civil, Geología, Física, Astronomía o Geofísica en la misma universidad.
+Al analizar cambios de carrera, no se considera un cambio de carrera cuando la matrícula inicial es en un programa de Bachillerato o College y luego hay matrícula en otras carreras de la misma institución.
 
   
 Autor de esta página: Ernesto Laval https://bsky.app/profile/elaval.bsky.social
