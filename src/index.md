@@ -176,7 +176,7 @@ const loaded = Mutable(false);
 const reset = () => loaded.value = true;
 ```
 
-# Matrícula en Educación Superior según comuna o establecimiento de egreso
+# Continuidad de Estudios en Educación Superior: Análisis por Comuna y Establecimiento
 ## Reporte en base a carreras e instituciones de Educación Superior en que se matriculan jovenes egresados de Enseñanza media durante los 9 años siguientes a su egreso.
 
 Este análisis explora los datos de matrícula en Educación Superior de jóvenes egresados de Educación Media en 2014
@@ -233,7 +233,7 @@ const comunaSeleccionada = (() => {
 ## ${comunaSeleccionada.comuna}
 <div class="card" style="padding: 10;">  
 
-## Resumen de la comuna
+## Resumen de Egresos y Matrícula en Educación Superior
 En 2014, egresaron **${matriculaComuna.estudiantesEgresados}** estudiantes de Eucación Media en **${comunaSeleccionada.comuna}**.
 
 Entre 2015 y 2024:
@@ -263,6 +263,7 @@ Entre 2015 y 2024:
   });
 })()
 ```
+Egresados matriculados por tipo de Institución (Universidad, IP, CFT)  
   * ${matriculaComuna.matriculadosU} en Universidades
   * ${matriculaComuna.matriculadosIP} en Institutos Profesionales
   * ${matriculaComuna.matriculadosCFT} en Centros de Formación Técnica
@@ -315,10 +316,9 @@ ${chartSankeyComuna}
 
 </div>
 
-### 5 carreras e instituciones más frecuentes en la comuna
 
+Top 5 de Carreras por Género
 <div class="grid grid-cols-2">  
-
 <div class="card" style="padding: 10;">  
 
 ## Carreras (hombres)
@@ -335,9 +335,9 @@ ${carrerasMujeresComuna.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudian
 </ul>
 </div>
 </div>
-<div class="small muted">Nota: Se agruparon especialidades de Ingeniería Civil para un análisis más claro de las carreras más frecuentes.</div>
-
-
+<div class="small muted">Nota: Se agruparon especialidades de Ingeniería Civil para un análisis más claro de las carreras más frecuentes.</div>  
+<br>
+Top 5 de Instituciones de Educación Superior
 <div class="grid grid-cols-1">
 <div class="card" style="padding: 10;">
 
@@ -351,6 +351,7 @@ ${[...institucionesComuna].slice(0,5).map(d => html`<li> ${d.institucion} (${d.e
 </div>
 
 ### Establecimientos en la communa
+Matrícula en Educación Superior por Establecimiento: Detalles y Comparaciones
 <div class="card">
 
 ## Número de estudiantes según tipo de institucion de Educación Superior por estableciomiento en la comuna
@@ -477,7 +478,7 @@ const establecimientoSeleccionado = (() =>{
 
 <div class="card" style="padding: 10;">  
 
-## Resumen General
+## Perfil por establecimiento: ${establecimientoSeleccionado.NOM_RBD}
 En 2014, egresaron **${ matriculaEstablecimiento.estudiantesEgresados}** estudiantes de **${establecimientoSeleccionado.NOM_RBD}**.
 
 Entre 2015 y 2024:
@@ -563,8 +564,7 @@ Nota: puede haber matriculas de la misma persona en más de un tipo de Instituci
 
 </div>
 
-## Las 5 carreras e instituciones más frecuentes
-
+Top 5 de Carreras por Género
 <div class="grid grid-cols-2">
 <div class="card" style="padding: 10;">  
 
@@ -577,13 +577,13 @@ ${carrerasHombresEstablecimiento.slice(0,5).map(d => html`<li> ${d.carrera} (${d
 ${carrerasMujeresEstablecimiento.slice(0,5).map(d => html`<li> ${d.carrera} (${d.estudiantes} estudiantes)`)}
 </div>
 </div>
-<div class="small muted">Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>
-
+<div class="small muted">Distintas especialidades de Ingeniería Civil se agrupan como "Ingeniería Civil".</div>  
+  
+<br>
+Top 5 de Instituciones de Educación Superior 
 <div class="grid grid-cols-1">
-
 <div class="card" style="padding: 10;">
 
-## Instituciones   
 ${[...institucionesEstablecimiento].slice(0,5).map(d => html`<li> ${d.institucion} (${d.estudiantes} estudiantes)`)}
 </div>
 </div>
@@ -640,24 +640,24 @@ const ordenRegiones = ({
 ```
 
 ----------
-## ¿Cómo se obtuvieron estos datos?
+## Origen de datos y definiciones
+**Fuente de datos**  
 Los datos utilizados en este análisis provienen de registros de egreso de Enseñanza Media y matrícula en Educación Superior en Chile, disponibles a través de Datos Abiertos del MINEDUC (https://datosabiertos.mineduc.cl/).
 
 * Datos de jóvenes egresados de Educación Media: https://datosabiertos.mineduc.cl/notas-de-ensenanza-media-y-percentil-jovenes/
 * Datos de matrícula en Educación Superior: https://datosabiertos.mineduc.cl/matricula-en-educacion-superior/
 
-## Notas metodológicas
-* **Carreras Genéricas**
+**Carreras Genéricas**  
 Carreras similares, como Ingeniería Agronómica o Agronomía e Ingeniería Forestal se agrupan bajo áreas genéricas para facilitar el análisis (se utiliza la definición de Aréa Carrera Genérica del Sistema de Información de la Educación Superior).
 
-* **Ingeniería Civil**
+**Ingeniería Civil**  
 Distintas carreras en la familia de "Ingeniería Civil" (Ej. Ingeniería Civil Electrónica, Ingeniería Civil Eléctrica, Ingeniería Civil Industrial, ...) se agrupan bajo "Ingeniería Civil" al reportar carreras más frecuentes.
 
 
-* **Plan común de Ingeniería Civil**
+**Plan común de Ingeniería Civil**  
 Al analizar cambios de carrera, no se considera un cambio de carrera cuando la matrícula inicial es en Plan Común de Ingeniería Civil y luego existe matrícula en carreras de Ingeniería Civil, Geología o Astronomía y Física en la misma institución.
 
-* **Ingreso vía Bachillerato o College**
+**Ingreso vía Bachillerato o College**  
 Al analizar cambios de carrera, no se considera un cambio de carrera cuando la matrícula inicial es en un programa de Bachillerato o College y luego hay matrícula en otras carreras de la misma institución.
 
   
