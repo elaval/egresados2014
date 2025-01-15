@@ -176,8 +176,15 @@ const loaded = Mutable(false);
 const reset = () => loaded.value = true;
 ```
 
+```js
+function isFirefox() {
+    return navigator.userAgent.includes("Firefox");
+}
+```
 # Continuidad de Estudios en Educación Superior: Análisis por Comuna y Establecimiento
 ## Reporte en base a carreras de pregrado e Instituciones de Educación Superior en que se matriculan jovenes egresados de Enseñanza media durante los 9 años siguientes a su egreso.
+
+${isFirefox() ? html`<div style="background-color:yellow">Nota: Se han reportado errores al usar <b>Firefox</b>.  Si la página arroja errores, por favor intentar con otro navegador </div>`: ``}
 
 Este análisis explora los datos de matrícula en Educación Superior de jóvenes egresados de Educación Media en 2014
 
